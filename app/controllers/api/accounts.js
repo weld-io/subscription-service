@@ -13,7 +13,7 @@ const Account = require('mongoose').model('Account');
 // Private functions
 
 const generateIdFromNameOrEmail = function (req, res, next) {
-	req.body.slug = helpers.toSlug(req.body.name || req.body.email);
+	req.body.reference = helpers.toSlug(req.body.name || req.body.email);
 	next();
 };
 
@@ -25,7 +25,7 @@ module.exports = function (app, config, authController) {
 		'/api/accounts',
 		mongooseCrudify({
 			Model: Account,
-			identifyingKey: 'slug',
+			identifyingKey: 'reference',
 			beforeActions: [
 				{ middlewares: [generateIdFromNameOrEmail], only: ['create'] },
 			],

@@ -10,7 +10,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const AccountSchema = new Schema({
-	slug: { type: String, unique: true, required: true, sparse: true },
+	reference: { type: String, unique: true, required: true, sparse: true },
 	name: { type: String },
 	email: { type: String, unique: true, required: true, sparse: true },
 	dateCreated: { type: Date, default: Date.now },
