@@ -66,6 +66,7 @@ Server will default to **http://localhost:3034**
 	- description
 - **Consumables** (e.g. projects, users - limited by Plan)
 
+
 ## API
 
 ### Create new account
@@ -142,10 +143,27 @@ Returns:
 
 ***Support consumables over time? E.g 10 projects/month.
 
+### Create new service
+
+	curl -X POST -H "Content-Type: application/json" -d '{ "name": "Image hosting", "description": "Store unlimited images in our cloud service." }' http://localhost:3034/api/services
+
+### Create new plan
+
+	curl -X POST -H "Content-Type: application/json" -d '{ "name": "Standard package", "price": { "monthly": 9.99 }, "services": ["image-hosting"] }' http://localhost:3034/api/plans
+
+
 ### Start subscription
 ### Update subscription
 ### Stop subscription
 
+
+## Old API
+
+	post('/users/:id/subscriptions/:subscription', sub.createSubscription);
+	post('/subscriptions', sub.createOrUpdate);
+	post('/subscriptions-stripe-webhook-super-secret', sub.receiveWebhook);
+	get('/users/:id/discounts/:code', sub.checkAvailableDiscount);
+	post('/users/:id/discounts/:code', sub.applyDiscount);
 
 
 ## API

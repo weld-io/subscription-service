@@ -1,6 +1,6 @@
 //
-// Name:    account.js
-// Purpose: Database model for Account: the company or person who will be billed for the Plan.
+// Name:    service.js
+// Purpose: Database model for Service, features included in a Plan
 // Creator: Tom Söderlund
 //
 
@@ -9,11 +9,11 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const AccountSchema = new Schema({
+const ServiceSchema = new Schema({
 	reference: { type: String, unique: true, required: true, sparse: true },
 	name: { type: String },
-	email: { type: String, unique: true, required: true, sparse: true },
+	description: { type: String },
 	dateCreated: { type: Date, default: Date.now },
 });
 
-mongoose.model('Account', AccountSchema);
+mongoose.model('Service', ServiceSchema);

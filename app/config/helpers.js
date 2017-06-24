@@ -32,3 +32,49 @@ module.exports.sendResponse = function (err, results, customErrorCode) {
 		return this.json(results);
 	}
 };
+
+module.exports.generateReferenceFromNameOrEmail = function (req, res, next) {
+	req.body.reference = module.exports.toSlug(req.body.reference || req.body.name || req.body.email);
+	next();
+};
+
+module.exports.stripIds = function (propertyName, req, res, next) {
+	req.crudify[propertyName] = req.crudify[propertyName].toObject();
+	delete req.crudify[propertyName]._id;
+	delete req.crudify[propertyName].__v;
+	next();
+};
+
+// E.g. populate user.account with full Account structure
+// helpers.populateProperties.bind(this, 'user', 'account')
+module.exports.populateProperties = function (modelName, propertyName, req, res, next) {
+	req.crudify[modelName].populate(propertyName, next);
+};
+
+// From reference to MongoDB _id (or multiple _id's)
+// E.g. user.account = 'my-company' --> user.account = '594e6f880ca23b37a4090fe0'
+// helpers.lookupChildIDs.bind(this, 'Service', 'reference', 'services')
+module.exports.lookupChildIDs = function (modelName, searchKey, searchValue, req, res, next) {
+	let searchQuery = {};
+	if (typeof(req.body[searchValue]) === 'string') {
+		// One value
+		searchQuery[searchKey] = req.body[searchValue];
+	}
+	else {
+		// Array
+		searchQuery[searchKey] = { $in: req.body[searchValue] };
+	}
+	const modelObj = require('mongoose').model(modelName);
+	modelObj.find(searchQuery, function (err, results) {
+		if (!err) {
+			if (results) {
+				req.body[searchValue] = (typeof(req.body[searchValue]) === 'string') ? results[0]._id : _.map(results, '_id');
+			}
+			else {
+				res.status(404);
+				err = modelName + '(s) not found: ' + req.body[searchValue];
+			}
+		}
+		next(err);
+	});
+};

@@ -12,11 +12,6 @@ const Account = require('mongoose').model('Account');
 
 // Private functions
 
-const generateIdFromNameOrEmail = function (req, res, next) {
-	req.body.reference = helpers.toSlug(req.body.name || req.body.email);
-	next();
-};
-
 // Public API
 
 module.exports = function (app, config, authController) {
@@ -27,7 +22,7 @@ module.exports = function (app, config, authController) {
 			Model: Account,
 			identifyingKey: 'reference',
 			beforeActions: [
-				{ middlewares: [generateIdFromNameOrEmail], only: ['create'] },
+				{ middlewares: [helpers.generateReferenceFromNameOrEmail], only: ['create'] },
 			],
 		})
 	);
