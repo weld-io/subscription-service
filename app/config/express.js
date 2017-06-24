@@ -1,3 +1,4 @@
+var glob = require('glob');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
 var compress = require('compression');
@@ -19,8 +20,10 @@ module.exports = function (app, config) {
 
 	// Routing
 	var authController = require(config.root + '/controllers/auth');
-	//require('./routes')(app, config, authController);
-	require('../controllers/api/accounts')(app, config, authController);
+	// Require in all controllers
+	glob.sync(config.root + '/controllers/api/*.js').forEach(function (ctrl) {
+		require(ctrl)(app, config, authController);
+	});
 
 	app.use(function (req, res, next) {
 		var err = new Error('Not Found');
