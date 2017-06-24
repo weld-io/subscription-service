@@ -1,0 +1,30 @@
+{
+  "name": "subscription-service",
+  "version": "0.1.0",
+  "description": "REST API service managing subscription pricing, services, consumables, VAT, etc. Built in Node.js.",
+  "author": "Weld (www.weld.io)",
+  "license": "MIT",
+  "main": "app/server.js",
+  "scripts": {
+    "dev": "nodemon app/server.js",
+    "start": "node app/server.js",
+    "test": "node test/app.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.17.1",
+    "compression": "^1.6.2",
+    "express": "^4.15.2",
+    "glob": "^7.1.1",
+    "lodash": "^4.17.4",
+    "mongodb": "^2.2.29",
+    "mongoose": "^4.10.8",
+    "mongoose-crudify": "^0.1.6",
+    "morgan": "^1.8.2",
+    "resource-router-middleware": "^0.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.11.0",
+    "supertest": "^3.0.0",
+    "tape": "^4.6.3"
+  }
+}
