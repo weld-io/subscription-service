@@ -1,10 +1,16 @@
+//
+// Name:    account.js
+// Purpose: Database model for Account
+// Creator: Tom Söderlund
+//
+
 'use strict';
 
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-var AccountSchema = new Schema({
-	id: { type: String, unique: true, required: true, sparse: true },
+const AccountSchema = new Schema({
+	slug: { type: String, unique: true, required: true, sparse: true },
 	name: { type: String },
 	email: { type: String, unique: true, required: true, sparse: true },
 	dateCreated: { type: Date, default: Date.now },

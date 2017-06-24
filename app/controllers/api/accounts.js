@@ -6,17 +6,18 @@
 
 'use strict';
 
-var mongooseCrudify = require('mongoose-crudify')
+const mongooseCrudify = require('mongoose-crudify');
+const helpers = require('../../config/helpers');
+const Account = require('mongoose').model('Account');
 
-var helpers = require('../../config/helpers');
-
-var Account = require('mongoose').model('Account');
-//var Account = require('../app/models/account');
+// Private functions
 
 const generateIdFromNameOrEmail = function (req, res, next) {
-	req.body.id = helpers.toSlug(req.body.name || req.body.email);
+	req.body.slug = helpers.toSlug(req.body.name || req.body.email);
 	next();
-}
+};
+
+// Public API
 
 module.exports = function (app, config, authController) {
 
@@ -24,7 +25,7 @@ module.exports = function (app, config, authController) {
 		'/api/accounts',
 		mongooseCrudify({
 			Model: Account,
-			identifyingKey: 'id',
+			identifyingKey: 'slug',
 			beforeActions: [
 				{ middlewares: [generateIdFromNameOrEmail], only: ['create'] },
 			],
@@ -46,11 +47,9 @@ module.exports = function (app, config, authController) {
 			// store the found model instance in req, eg: req.crudify.account 
 			// if changed to false, you must override the update and read middlewares 
 			loadModel: true,
+
 			beforeActions: [
-				{
-					middlewares: [ensureLogin],
-					except: ['list', 'read'] // list, create, read, update, delete
-				}
+				{ middlewares: [ensureLogin], except: ['list', 'read'] // list, create, read, update, delete }
 			],
 			actions: {
 				// default actions: list, create, read, update, delete 
@@ -60,15 +59,10 @@ module.exports = function (app, config, authController) {
 				update: function (req, res, next) {}
 			},
 			afterActions: [
-				{
-					middlewares: [updateViewCount],
-					only: ['read']
-				},
-				{
-					middlewares: [redirectToAccount],
-					only: ['update']
-				}
+				{ middlewares: [updateViewCount], only: ['read'] },
+				{ middlewares: [redirectToAccount], only: ['update'] }
 			],
+
 			options: {
 				// https://expressjs.com/en/api.html#express.router 
 				// if no existing router passed in, new one will be created with these options 

@@ -72,6 +72,10 @@ Server will default to **http://localhost:3034**
 
 	curl -X POST -H "Content-Type: application/json" -d '{ "name": "My Company", "email": "invoices@mycompany.com" }' http://localhost:3034/api/accounts
 
+### Create new user
+
+	curl -X POST -H "Content-Type: application/json" -d '{ "externalId": "12345", "account": "my-company" }' http://localhost:3034/api/users
+
 
 ### Get user
 
