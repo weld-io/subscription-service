@@ -13,6 +13,17 @@ const Account = require('mongoose').model('Account');
 
 // Private functions
 
+const temporaryLogProperties = function (req, res, next) {
+	console.log('temporaryLogProperties:');
+	// Get types for all properties for the arguments object
+	let result = {};
+	for (let key in arguments) {
+		result[key] = typeof(arguments[key]);
+	}
+	console.log(result);
+	next();
+};
+
 // Public API
 
 module.exports = function (app, config, authController) {
@@ -28,7 +39,7 @@ module.exports = function (app, config, authController) {
 				{ middlewares: [helpers.stripIds.bind(this, 'user')], only: ['read'] },
 			],
 			afterActions: [
-				//{ middlewares: [helpers.stripIds.bind(this, 'user')] },
+				{ middlewares: [temporaryLogProperties] },
 			],
 		})
 	);
