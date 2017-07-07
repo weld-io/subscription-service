@@ -39,6 +39,7 @@ Server will default to **http://localhost:3034**
 - [ ] VAT support
 - [ ] Consumables - counting, routes
 - [ ] Validations
+- [ ] Stop subscriptions by User (not Account)
 
 
 ## Entities
@@ -79,15 +80,19 @@ Server will default to **http://localhost:3034**
 
 ## API
 
-### Create new account
+### Accounts
 
-	curl -X POST -H "Content-Type: application/json" -d '{ "name": "My Company", "email": "invoices@mycompany.com" }' http://localhost:3034/api/accounts
+#### Create new account
 
-### Create new user
+	curl -X POST http://localhost:3034/api/accounts -H "Content-Type: application/json" -d '{ "name": "My Company", "email": "invoices@mycompany.com" }'
 
-	curl -X POST -H "Content-Type: application/json" -d '{ "reference": "12345", "account": "my-company" }' http://localhost:3034/api/users
+### Users
 
-### Get user
+#### Create new user
+
+	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "12345", "account": "my-company" }'
+
+#### Get user
 
 	GET /api/users/:reference
 
@@ -117,11 +122,23 @@ Returns:
 
 *Support multiple active plans? Or just show the “best” active plan?
 
+#### Update user
 
-### List plans
-### Get plan info
+	curl -X PUT http://localhost:3034/api/users/12345 -H "Content-Type: application/json" -d '{ "account": "my-company" }'
 
-	GET /api/plans/:planId
+### Plans
+
+#### Create new plan
+
+	curl -X POST http://localhost:3034/api/plans -H "Content-Type: application/json" -d '{ "name": "Standard package", "price": { "monthly": 9.99 }, "services": ["image-hosting"] }'
+
+#### List plans
+
+	curl -X GET http://localhost:3034/api/plans
+
+#### Get plan info
+
+	curl -X GET http://localhost:3034/api/plans/:planId
 
 Returns:
 
@@ -153,30 +170,29 @@ Returns:
 
 ***Support consumables over time? E.g 10 projects/month.
 
-### Create new service
+### Services
 
-	curl -X POST -H "Content-Type: application/json" -d '{ "name": "Image hosting", "description": "Store unlimited images in our cloud service." }' http://localhost:3034/api/services
+#### Create new service
 
-### Create new plan
+	curl -X POST http://localhost:3034/api/services -H "Content-Type: application/json" -d '{ "name": "Image hosting", "description": "Store unlimited images in our cloud service." }'
 
-	curl -X POST -H "Content-Type: application/json" -d '{ "name": "Standard package", "price": { "monthly": 9.99 }, "services": ["image-hosting"] }' http://localhost:3034/api/plans
+### Subscriptions
 
+#### Start subscription
 
-### Start subscription
+	curl -X POST http://localhost:3034/api/accounts/my-company/subscriptions -H "Content-Type: application/json" -d '{ ... }'
 
-	curl -X POST -H "Content-Type: application/json" -d '{ ... }' http://localhost:3034/api/accounts/my-company/subscriptions
+#### Update subscription
 
-### Update subscription
+	curl -X PUT http://localhost:3034/api/accounts/my-company/subscriptions/:subId -H "Content-Type: application/json" -d '{ ... }'
 
-	curl -X PUT -H "Content-Type: application/json" -d '{ ... }' http://localhost:3034/api/accounts/my-company/subscriptions/sub
+#### Stop subscription
 
-### Stop subscription
+	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions/:subId 
 
-	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions/sub
+#### Stop all subscriptions
 
-### Stop all subscriptions
-
-	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions
+	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions 
 
 
 ## Old API

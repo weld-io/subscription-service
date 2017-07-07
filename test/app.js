@@ -45,18 +45,20 @@ var request = require('supertest');
 // 	t.end();
 // });
 
-test('Correct things returned', function (t) {
+test('Accounts: List', function (t) {
 	var app = require('../app/app');
 	request(app)
-	.get('/api/things')
-	.expect('Content-Type', /json/)
-	.expect(200)
-	.end(function (err, res) {
-		t.error(err, 'No error');
-		t.ok(res.body.length, 'Returned things list');
-		t.ok(res.body[0].dateCreated, 'Thing #0 existed');
-		//t.same(res.body, expectedUsers, 'Users as expected');
-		t.end();
-		app.closeDatabase();
-	});
+		.get('/api/accounts')
+		.expect('Content-Type', /json/)
+		.expect(200)
+		.end(function (err, res) {
+			t.error(err, 'No error');
+			t.ok(res.body.length, 'Returned accounts list');
+			t.ok(res.body[0], 'account #0 existed');
+			t.ok(res.body[0].reference, 'account #0 has reference');
+			t.ok(res.body[0].dateCreated, 'account #0 has dateCreated');
+			//t.same(res.body, expectedUsers, 'Users as expected');
+			t.end();
+			app.closeDatabase();
+		});
 });
