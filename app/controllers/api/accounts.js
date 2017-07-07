@@ -12,6 +12,8 @@ const Account = require('mongoose').model('Account');
 
 // Private functions
 
+const identifyingKey = 'reference';
+
 // Public API
 
 module.exports = function (app, config, authController) {
@@ -20,54 +22,15 @@ module.exports = function (app, config, authController) {
 		'/api/accounts',
 		mongooseCrudify({
 			Model: Account,
-			identifyingKey: 'reference',
+			identifyingKey: identifyingKey,
 			beforeActions: [
 				{ middlewares: [helpers.generateReferenceFromNameOrEmail], only: ['create'] },
 			],
-		})
-	);
-
-	/*
-	app.use(
-		'/api/accounts',
-		mongooseCrudify({
-			Model: Account, // mongoose model, required
-			identifyingKey: 'id', // route param name, defaults to '_id' 
-			selectFields: 'pub1 pub2 -secret', // http://mongoosejs.com/docs/api.html#query_Query-select 
-
-			// reuse your existing express.Router() object 
-			router: existingRouter
-
-			// load model on update and read actions, defaults to true 
-			// store the found model instance in req, eg: req.crudify.account 
-			// if changed to false, you must override the update and read middlewares 
-			loadModel: true,
-
-			beforeActions: [
-				{ middlewares: [ensureLogin], except: ['list', 'read'] // list, create, read, update, delete }
-			],
-			actions: {
-				// default actions: list, create, read, update, delete 
-				// any non-overridden action will be in functional 
-
-				//override update 
-				update: function (req, res, next) {}
-			},
+			endResponseInAction: false,
 			afterActions: [
-				{ middlewares: [updateViewCount], only: ['read'] },
-				{ middlewares: [redirectToAccount], only: ['update'] }
+				{ middlewares: [helpers.stripAndSend.bind(this, { identifyingKey: identifyingKey })] },
 			],
-
-			options: {
-				// https://expressjs.com/en/api.html#express.router 
-				// if no existing router passed in, new one will be created with these options 
-				// all default to false 
-				caseSensitive: false,
-				mergeParams: false,
-				strict: false
-			}
 		})
 	);
-	*/
 
 };

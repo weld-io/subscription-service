@@ -12,6 +12,8 @@ const Service = require('mongoose').model('Service');
 
 // Private functions
 
+const identifyingKey = 'reference';
+
 // Public API
 
 module.exports = function (app, config, authController) {
@@ -20,10 +22,13 @@ module.exports = function (app, config, authController) {
 		'/api/services',
 		mongooseCrudify({
 			Model: Service,
-			identifyingKey: 'reference',
+			identifyingKey: identifyingKey,
 			beforeActions: [
 				{ middlewares: [helpers.generateReferenceFromNameOrEmail], only: ['create'] },
-				{ middlewares: [helpers.stripIds.bind(this, 'service')], only: ['read'] },
+			],
+			endResponseInAction: false,
+			afterActions: [
+				{ middlewares: [helpers.stripAndSend.bind(this, { identifyingKey: identifyingKey })] },
 			],
 		})
 	);

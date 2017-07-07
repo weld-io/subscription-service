@@ -18,7 +18,7 @@
     "lodash": "^4.17.4",
     "mongodb": "^2.2.29",
     "mongoose": "^4.10.8",
-    "mongoose-crudify": "^0.1.6",
+    "mongoose-crudify": "git+https://github.com/ryo718/mongoose-crudify.git#0.2.0",
     "morgan": "^1.8.2",
     "resource-router-middleware": "^0.7.0"
   },

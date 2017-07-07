@@ -2,6 +2,20 @@
 
 var _ = require('lodash');
 
+// Get types for all properties for the arguments object
+module.exports.logArguments = function () {
+	console.log('logArguments:');
+	for (let key in arguments)
+		console.log(`  ${key}: ${typeof(arguments[key])}`);
+};
+
+// Get types for all properties for the arguments object
+module.exports.logProperties = function (obj) {
+	console.log('logProperties:');
+	for (let key in obj)
+		console.log(`  ${key}: ${typeof(obj[key])}`);
+};
+
 module.exports.toSlug = function (str, removeInternationalChars) {
 	// Abort if not a proper string value
 	if (!str || typeof(str) !== 'string')
@@ -38,11 +52,24 @@ module.exports.generateReferenceFromNameOrEmail = function (req, res, next) {
 	next();
 };
 
-module.exports.stripIds = function (propertyName, req, res, next) {
-	req.crudify[propertyName] = req.crudify[propertyName].toObject();
-	delete req.crudify[propertyName]._id;
-	delete req.crudify[propertyName].__v;
-	next();
+const stripIds = (options, obj) => {
+	let newObj = obj.toObject();
+	delete newObj._id;
+	delete newObj.__v;
+	if (options.identifyingKey) {
+		newObj.id = newObj[options.identifyingKey];
+		delete newObj[options.identifyingKey];
+	}
+	return newObj;
+}
+
+module.exports.stripAndSend = function (options, req, res, next) {
+	if (req.crudify.result.length !== undefined)
+		// Array
+		res.json(_.map(req.crudify.result, stripIds.bind(this, options)));
+	else
+		// One object
+		res.json(stripIds(options, req.crudify.result));
 };
 
 // E.g. populate user.account with full Account structure

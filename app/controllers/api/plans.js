@@ -13,6 +13,8 @@ const Plan = require('mongoose').model('Plan');
 
 // Private functions
 
+const identifyingKey = 'reference';
+
 // Public API
 
 module.exports = function (app, config, authController) {
@@ -21,11 +23,14 @@ module.exports = function (app, config, authController) {
 		'/api/plans',
 		mongooseCrudify({
 			Model: Plan,
-			identifyingKey: 'reference',
+			identifyingKey: identifyingKey,
 			beforeActions: [
 				{ middlewares: [helpers.generateReferenceFromNameOrEmail, helpers.lookupChildIDs.bind(this, 'Service', 'reference', 'services')], only: ['create'] },
 				{ middlewares: [helpers.populateProperties.bind(this, 'plan', 'services')], only: ['read'] },
-				{ middlewares: [helpers.stripIds.bind(this, 'plan')], only: ['read'] },
+			],
+			endResponseInAction: false,
+			afterActions: [
+				{ middlewares: [helpers.stripAndSend.bind(this, { identifyingKey: identifyingKey })] },
 			],
 		})
 	);
