@@ -74,8 +74,12 @@ module.exports.stripAndSend = function (options, req, res, next) {
 
 // E.g. populate user.account with full Account structure
 // helpers.populateProperties.bind(this, 'user', 'account')
-module.exports.populateProperties = function (modelName, propertyName, req, res, next) {
-	req.crudify[modelName].populate(propertyName, next);
+module.exports.populateProperties = function ({modelName, propertyName, afterPopulate}, req, res, next) {
+	req.crudify[modelName].populate(propertyName, (err, result) => {
+		console.log('populateProperties', result);
+		result.hello = 1;
+		next();
+	});
 };
 
 // From reference to MongoDB _id (or multiple _id's)

@@ -26,7 +26,7 @@ module.exports = function (app, config, authController) {
 			identifyingKey: identifyingKey,
 			beforeActions: [
 				{ middlewares: [helpers.generateReferenceFromNameOrEmail, helpers.lookupChildIDs.bind(this, 'Service', 'reference', 'services')], only: ['create'] },
-				{ middlewares: [helpers.populateProperties.bind(this, 'plan', 'services')], only: ['read'] },
+				{ middlewares: [helpers.populateProperties.bind(this, { modelName:'plan', propertyName:'services' })], only: ['read'] },
 			],
 			endResponseInAction: false,
 			afterActions: [
