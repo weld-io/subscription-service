@@ -57,7 +57,7 @@ Server will default to **http://localhost:3034**
 	- pricePerYear
 	- consumables: { projects: 10 }
 	- trialDays: 30
-- **Subscriptions** (a User subscribes on a Plan)
+- **Subscriptions** (an Account subscribes on a Plan)
 	- planId
 	- expiryDate
 	- reference (e.g. domains, User can’t have multiple subscriptions with same Reference)
@@ -76,6 +76,8 @@ Server will default to **http://localhost:3034**
 ### Create new user
 
 	curl -X POST -H "Content-Type: application/json" -d '{ "externalId": "12345", "account": "my-company" }' http://localhost:3034/api/users
+
+TODO: create user + account in one request.
 
 ### Get user
 
