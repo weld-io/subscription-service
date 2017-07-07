@@ -56,10 +56,6 @@ const stripIds = (options, obj) => {
 	let newObj = obj.toObject();
 	delete newObj._id;
 	delete newObj.__v;
-	if (options.identifyingKey) {
-		newObj.id = newObj[options.identifyingKey];
-		delete newObj[options.identifyingKey];
-	}
 	return newObj;
 }
 
@@ -75,11 +71,7 @@ module.exports.stripAndSend = function (options, req, res, next) {
 // E.g. populate user.account with full Account structure
 // helpers.populateProperties.bind(this, 'user', 'account')
 module.exports.populateProperties = function ({modelName, propertyName, afterPopulate}, req, res, next) {
-	req.crudify[modelName].populate(propertyName, (err, result) => {
-		console.log('populateProperties', result);
-		result.hello = 1;
-		next();
-	});
+	req.crudify[modelName].populate(propertyName, '-_id -__v', next);
 };
 
 // From reference to MongoDB _id (or multiple _id's)

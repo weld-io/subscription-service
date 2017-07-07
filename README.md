@@ -31,6 +31,16 @@ Server will default to **http://localhost:3034**
 	npm test
 
 
+## Development Plan
+
+- [ ] Create user + account in one request
+- [ ] Stripe integration
+- [ ] Discount coupons - via coupon-service
+- [ ] VAT support
+- [ ] Consumables - counting, routes
+- [ ] Validations
+
+
 ## Entities
 
 - **Accounts**
@@ -46,18 +56,18 @@ Server will default to **http://localhost:3034**
 			- subscriptionId
 - **Users** (on an Account)
 	- accountId
-	- externalId (e.g. Weld ID)
+	- reference (e.g. Weld ID)
 	- consumables
 		- projects: 2
 - **Plans**
 	- name
-	- available: true/false
+	- isAvailable: true/false
 	- services (Array)
 	- pricePerMonth
 	- pricePerYear
 	- consumables: { projects: 10 }
 	- trialDays: 30
-- **Subscriptions** (an Account subscribes on a Plan)
+- **Subscriptions** (an Account subscribes to one or more Plans)
 	- planId
 	- expiryDate
 	- reference (e.g. domains, User can’t have multiple subscriptions with same Reference)
@@ -75,13 +85,11 @@ Server will default to **http://localhost:3034**
 
 ### Create new user
 
-	curl -X POST -H "Content-Type: application/json" -d '{ "externalId": "12345", "account": "my-company" }' http://localhost:3034/api/users
-
-TODO: create user + account in one request.
+	curl -X POST -H "Content-Type: application/json" -d '{ "reference": "12345", "account": "my-company" }' http://localhost:3034/api/users
 
 ### Get user
 
-	GET /api/users/:externalId
+	GET /api/users/:reference
 
 Returns:
 
@@ -155,49 +163,35 @@ Returns:
 
 
 ### Start subscription
+
+	curl -X POST -H "Content-Type: application/json" -d '{ ... }' http://localhost:3034/api/accounts/my-company/subscriptions
+
 ### Update subscription
+
+	curl -X PUT -H "Content-Type: application/json" -d '{ ... }' http://localhost:3034/api/accounts/my-company/subscriptions/sub
+
 ### Stop subscription
+
+	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions/sub
+
+### Stop all subscriptions
+
+	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions
 
 
 ## Old API
 
-	post('/users/:id/subscriptions/:subscription', sub.createSubscription);
-	post('/subscriptions', sub.createOrUpdate);
-	post('/subscriptions-stripe-webhook-super-secret', sub.receiveWebhook);
+	Create subscription: post('/users/:id/subscriptions/:subscription', sub.createSubscription);
+	Create/update subscription: post('/subscriptions', sub.createOrUpdate);
+	Webhook, extend subscription: post('/subscriptions-stripe-webhook-super-secret', sub.receiveWebhook);
+	
 	get('/users/:id/discounts/:code', sub.checkAvailableDiscount);
 	post('/users/:id/discounts/:code', sub.applyDiscount);
 
 
-## API
-
-Read (list) all things:
-
-	curl http://localhost:3034/api/things
-
-Read one thing:
-
-	curl http://localhost:3034/api/things/591fb7a2c491b353765e60a3
-
-Create new thing:
-
-	curl -X POST -H "Content-Type: application/json" -d '{ "name": "My Thing" }' http://localhost:3034/api/things
-
-Update thing:
-
-	curl -X PUT -H "Content-Type: application/json" -d '{ "name": "My Updated Thing" }' http://localhost:3034/api/things/548cbb2b1ad50708212193d8
-
-Delete thing:
-
-	curl -X DELETE http://localhost:3034/api/things/5477a6f88906b9fc766c843e
-
-Delete all things:
-
-	curl -X DELETE http://localhost:3034/api/things/ALL
-
-
 ## Implementation
 
-Built on Node.js, Express, MongoDB.
+Built on Node.js, Express, MongoDB, mongoose-crudify.
 
 
 ## Deploying on Heroku

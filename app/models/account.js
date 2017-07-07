@@ -13,10 +13,10 @@ const dateIn30Days = () => new Date((new Date()).getTime() + 30*24*60*60*1000).g
 
 // Subscription to a Plan
 const Subscription = new Schema({
+	reference: { type: String, unique: true, sparse: true }, // e.g. attached to certain consumable
 	plan: { type: Schema.Types.ObjectId, ref: 'Plan', required: true },
 	dateCreated: { type: Date, default: Date.now },
 	dateExpires: { type: Date, default: dateIn30Days },
-	reference: { type: String, unique: true, sparse: true }, // e.g. attached to certain consumable
 });
 
 const AccountSchema = new Schema({

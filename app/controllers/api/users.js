@@ -13,7 +13,7 @@ const Account = require('mongoose').model('Account');
 
 // Private functions
 
-const identifyingKey = 'externalId';
+const identifyingKey = 'reference';
 
 // Public API
 
