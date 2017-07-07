@@ -28,7 +28,8 @@ const AccountSchema = new Schema({
 	reference: { type: String, unique: true, required: true, sparse: true },
 	name: { type: String },
 	company: Company,
-	email: { type: String, unique: true, required: true, sparse: true },
+	countryCode: { type: String },
+	email: { type: String, unique: true, required: false, sparse: true },
 	dateCreated: { type: Date, default: Date.now },
 	subscriptions: [Subscription],
 });

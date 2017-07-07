@@ -33,19 +33,20 @@ Server will default to **http://localhost:3034**
 
 ## Development Plan
 
-- [ ] Create user + account in one request
+- [ ] Authentication with JWT
 - [ ] Stripe integration
 - [ ] Discount coupons - via coupon-service
 - [ ] VAT support
 - [ ] Consumables - counting, routes
 - [ ] Validations
+- [ ] Create user + account in one request
 - [ ] Stop subscriptions by User (not Account)
 
 
 ## Entities
 
 - **Accounts**
-	- (email? later)
+	- email
 	- company
 		- name
 		- vatNumber
