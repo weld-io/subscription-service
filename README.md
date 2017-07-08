@@ -39,10 +39,10 @@ Server will default to **http://localhost:3034**
 - [ ] Discount coupons - via [coupon-service](https://github.com/weld-io/coupon-service)
 - [ ] VAT support
 - [ ] Consumables - counting, routes
-- [ ] Validations
 - [ ] Stop subscriptions by User (not Account)
 - [ ] See a User's current Services
 - [ ] See a User's current Consumables
+- [ ] Validations
 
 ## Entities
 
