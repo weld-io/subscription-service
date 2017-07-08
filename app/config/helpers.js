@@ -47,11 +47,6 @@ module.exports.sendResponse = function (err, results, customErrorCode) {
 	}
 };
 
-module.exports.generateReferenceFromNameOrEmail = function (req, res, next) {
-	req.body.reference = module.exports.toSlug(req.body.reference || req.body.name || req.body.email);
-	next();
-};
-
 const stripIds = (options, obj) => {
 	let newObj = obj.toObject();
 	delete newObj._id;
@@ -77,25 +72,43 @@ module.exports.populateProperties = function ({modelName, propertyName, afterPop
 // From reference to MongoDB _id (or multiple _id's)
 // E.g. user.account = 'my-company' --> user.account = '594e6f880ca23b37a4090fe0'
 // helpers.lookupChildIDs.bind(this, 'Service', 'reference', 'services')
-module.exports.lookupChildIDs = function (modelName, searchKey, searchValue, req, res, next) {
-	let searchQuery = {};
-	if (typeof(req.body[searchValue]) === 'string') {
-		// One value
-		searchQuery[searchKey] = req.body[searchValue];
-	}
-	else {
-		// Array
-		searchQuery[searchKey] = { $in: req.body[searchValue] };
-	}
+module.exports.lookupChildIDs = function ({modelName, parentCollection, childIdentifier}, req, res, next) {
 	const modelObj = require('mongoose').model(modelName);
-	modelObj.find(searchQuery, function (err, results) {
+	let searchQuery = {};
+	let lookupAction = 'find';
+	const parentCollectionType = Object.prototype.toString.call(req.body[parentCollection]);
+	switch (parentCollectionType) {
+		case '[object String]': // One identifier
+			searchQuery[childIdentifier] = req.body[parentCollection];
+			break;
+		case '[object Array]': // Array of identifiers
+			searchQuery[childIdentifier] = { $in: req.body[parentCollection] };
+			break;
+		case '[object Object]': // Create new child object, e.g. create User and
+			lookupAction = 'create';
+			searchQuery = req.body[parentCollection];
+			break;
+	}
+	// Do the find or create, depending on lookupAction
+	modelObj[lookupAction](searchQuery, function (err, results) {
+		console.log(lookupAction, err, results);
 		if (!err) {
 			if (results) {
-				req.body[searchValue] = (typeof(req.body[searchValue]) === 'string') ? results[0]._id : _.map(results, '_id');
+				switch (parentCollectionType) {
+					case '[object String]': // One identifier
+						req.body[parentCollection] = results[0]._id;
+						break;
+					case '[object Array]': // Array of identifiers
+						req.body[parentCollection] = _.map(results, '_id');
+						break;
+					case '[object Object]': // Create new child object, e.g. create User and
+						req.body[parentCollection] = results._id;
+						break;
+				}
 			}
 			else {
 				res.status(404);
-				err = modelName + '(s) not found: ' + req.body[searchValue];
+				err = modelName + '(s) not found: ' + req.body[parentCollection];
 			}
 		}
 		next(err);

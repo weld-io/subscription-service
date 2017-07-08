@@ -33,13 +33,13 @@ Server will default to **http://localhost:3034**
 
 ## Development Plan
 
+- [x] Create user + account in one request
 - [ ] Authentication with JWT
 - [ ] Stripe integration
 - [ ] Discount coupons - via coupon-service
 - [ ] VAT support
 - [ ] Consumables - counting, routes
 - [ ] Validations
-- [ ] Create user + account in one request
 - [ ] Stop subscriptions by User (not Account)
 
 
@@ -91,7 +91,11 @@ Server will default to **http://localhost:3034**
 
 #### Create new user
 
-	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "12345", "account": "my-company" }'
+	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "user1", "account": "my-company" }'
+
+#### Create new user and account
+
+	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "user2", "account": { "name": "My Company 2", "email": "invoices@mycompany2.com" } }'
 
 #### Get user
 
@@ -126,6 +130,12 @@ Returns:
 #### Update user
 
 	curl -X PUT http://localhost:3034/api/users/12345 -H "Content-Type: application/json" -d '{ "account": "my-company" }'
+
+### Services
+
+#### Create new service
+
+	curl -X POST http://localhost:3034/api/services -H "Content-Type: application/json" -d '{ "name": "Image hosting", "description": "Store unlimited images in our cloud service." }'
 
 ### Plans
 
@@ -170,12 +180,6 @@ Returns:
 	}
 
 ***Support consumables over time? E.g 10 projects/month.
-
-### Services
-
-#### Create new service
-
-	curl -X POST http://localhost:3034/api/services -H "Content-Type: application/json" -d '{ "name": "Image hosting", "description": "Store unlimited images in our cloud service." }'
 
 ### Subscriptions
 

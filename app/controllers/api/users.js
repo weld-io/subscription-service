@@ -25,7 +25,7 @@ module.exports = function (app, config, authController) {
 			Model: User,
 			identifyingKey: identifyingKey,
 			beforeActions: [
-				{ middlewares: [helpers.lookupChildIDs.bind(this, 'Account', 'reference', 'account')], only: ['create', 'update'] },
+				{ middlewares: [helpers.lookupChildIDs.bind(this, { modelName:'Account', parentCollection:'account', childIdentifier:'reference' })], only: ['create', 'update'] },
 				{ middlewares: [helpers.populateProperties.bind(this, { modelName:'user', propertyName:'account' })], only: ['read'] },
 			],
 			endResponseInAction: false,

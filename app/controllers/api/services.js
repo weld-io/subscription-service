@@ -24,7 +24,6 @@ module.exports = function (app, config, authController) {
 			Model: Service,
 			identifyingKey: identifyingKey,
 			beforeActions: [
-				{ middlewares: [helpers.generateReferenceFromNameOrEmail], only: ['create'] },
 			],
 			endResponseInAction: false,
 			afterActions: [

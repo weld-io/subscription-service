@@ -8,6 +8,7 @@
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const helpers = require('../config/helpers');
 
 // Consumable: e.g. projects, documents
 const Consumable = new Schema({
@@ -27,9 +28,15 @@ const PlanSchema = new Schema({
 		once: Number,
 		vatIncluded: Boolean,
 	},
-	trialDays: { type: Number, default: 0 },
+	trialDays: { type: Number },
 	consumables: [Consumable], // see above
 	services: [{ type: Schema.Types.ObjectId, ref: 'Service' }], // see service.js
+});
+
+// Set reference/slug
+PlanSchema.pre('validate', function (next) {
+	this.reference = helpers.toSlug(this.reference || this.name);
+	next();
 });
 
 mongoose.model('Plan', PlanSchema);

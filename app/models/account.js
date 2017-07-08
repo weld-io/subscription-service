@@ -8,6 +8,7 @@
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const helpers = require('../config/helpers');
 
 const dateIn30Days = () => new Date((new Date()).getTime() + 30*24*60*60*1000).getTime();
 
@@ -26,12 +27,18 @@ const Subscription = new Schema({
 
 const AccountSchema = new Schema({
 	reference: { type: String, unique: true, required: true, sparse: true },
+	email: { type: String },
 	name: { type: String },
 	company: Company,
 	countryCode: { type: String },
-	email: { type: String, unique: true, required: false, sparse: true },
 	dateCreated: { type: Date, default: Date.now },
 	subscriptions: [Subscription],
+});
+
+// Set reference/slug
+AccountSchema.pre('validate', function (next) {
+	this.reference = helpers.toSlug(this.reference || this.name || this.email);
+	next();
 });
 
 mongoose.model('Account', AccountSchema);
