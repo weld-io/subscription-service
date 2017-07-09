@@ -48,6 +48,7 @@ Server will default to **http://localhost:3034**
 - [ ] Discount coupons - via [coupon-service](https://github.com/weld-io/coupon-service)
 - [ ] Validations
 
+
 ## Entities
 
 For B2C apps, one Account has only one User.
@@ -120,8 +121,8 @@ Note: `reference` is where you use your main permanent user ID, e.g. from anothe
 Returns:
 
 	{
-		id: xxx,
-		account: xxx,
+		reference: xxx,
+		account: { reference: ... },
 		plans: ['b2b_small'], *
 		expiryDate: '2017-12-31',
 		services: {

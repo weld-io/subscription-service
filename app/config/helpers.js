@@ -58,6 +58,10 @@ module.exports.sendResponse = function (err, results, callback) {
 	}
 };
 
+module.exports.sendRequestResponse = function (req, res, next) {
+	module.exports.sendResponse.call(res, null, req.crudify.result);
+};
+
 const stripIds = (options, obj) => {
 	let newObj = obj.toObject();
 	delete newObj._id;
@@ -65,13 +69,16 @@ const stripIds = (options, obj) => {
 	return newObj;
 }
 
-module.exports.stripAndSend = function (options, req, res, next) {
-	if (req.crudify.result.length !== undefined)
+module.exports.stripIdsFromResult = function (options, req, res, next) {
+	if (req.crudify.result.length !== undefined) {
 		// Array
-		res.json(_.map(req.crudify.result, stripIds.bind(this, options)));
-	else
+		req.crudify.result = _.map(req.crudify.result, stripIds.bind(this, options));
+	}
+	else {
 		// One object
-		res.json(stripIds(options, req.crudify.result));
+		req.crudify.result = stripIds(options, req.crudify.result);
+	}
+	next();
 };
 
 // E.g. populate user.account with full Account structure
