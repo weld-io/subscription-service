@@ -39,12 +39,13 @@ Server will default to **http://localhost:3034**
 - [ ] Consumables controller - counting, routes
 - [ ] See a User's current Services
 - [ ] See a User's current Consumables
+- [ ] Set Subscription.dateExpires by "90d" or similar
+- [ ] Subscriptions should be deactivated (with timestamp), not deleted
 - [ ] Find-or-create User (by reference)
 - [ ] Authentication with JWT
 - [ ] Stripe integration
 - [ ] VAT support
 - [ ] Discount coupons - via [coupon-service](https://github.com/weld-io/coupon-service)
-- [ ] Set Subscription.dateExpires by "90d" or similar
 - [ ] Validations
 
 ## Entities
