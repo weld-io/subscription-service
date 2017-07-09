@@ -91,7 +91,6 @@ module.exports.lookupChildIDs = function ({modelName, parentCollection, childIde
 	}
 	// Do the find or create, depending on lookupAction
 	modelObj[lookupAction](searchQuery, function (err, results) {
-		console.log(lookupAction, err, results);
 		if (!err) {
 			if (results) {
 				switch (parentCollectionType) {

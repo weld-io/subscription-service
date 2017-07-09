@@ -10,7 +10,7 @@ This is **not a payment platform** - instead it’s a layer between your app and
 
 Made by the team at **Weld** ([www.weld.io](https://www.weld.io?utm_source=github-subscription-service)), the #codefree app and web creation tool:
 
-[![Weld](https://s3-eu-west-1.amazonaws.com/weld-social-and-blog/gif/weld_explained.gif)](https://www.weld.io?utm_source=github-subscription-service)
+[![Weld](https://s3-eu-west-1.amazonaws.com/weld-social-and-blog/gif/weld_explained.gif?v2)](https://www.weld.io?utm_source=github-subscription-service)
 
 
 ## How to Run
@@ -34,19 +34,26 @@ Server will default to **http://localhost:3034**
 ## Development Plan
 
 - [x] Create user + account in one request
+- [ ] Find-or-create User by reference
 - [ ] Authentication with JWT
 - [ ] Stripe integration
-- [ ] Discount coupons - via [coupon-service](https://github.com/weld-io/coupon-service)
 - [ ] VAT support
 - [ ] Consumables - counting, routes
+- [ ] Subscriptions controller (by Account or User)
 - [ ] Stop subscriptions by User (not Account)
 - [ ] See a User's current Services
 - [ ] See a User's current Consumables
+- [ ] Discount coupons - via [coupon-service](https://github.com/weld-io/coupon-service)
 - [ ] Validations
 
 ## Entities
 
+For B2C apps, one Account has only one User.
+For B2B apps, there can be multiple Users on each Account.
+
 - **Accounts**
+	- name
+	- reference (slug)
 	- email
 	- company
 		- name
@@ -54,16 +61,19 @@ Server will default to **http://localhost:3034**
 	- countryCode
 	- discountCoupon
 	- paymentPlatforms
-		- Stripe
+		- stripe
 			- customerId
 			- subscriptionId
+	- subscriptions (array of Subscriptions)
 - **Users** (on an Account)
-	- accountId
-	- reference (e.g. Weld ID)
+	- reference (e.g. user ID in another app)
+	- account (reference to Account)
 	- consumables
 		- projects: 2
 - **Plans**
 	- name
+	- reference (slug)
+	- description
 	- isAvailable: true/false
 	- services (Array)
 	- pricePerMonth
@@ -71,11 +81,12 @@ Server will default to **http://localhost:3034**
 	- consumables: { projects: 10 }
 	- trialDays: 30
 - **Subscriptions** (an Account subscribes to one or more Plans)
-	- planId
-	- expiryDate
+	- plan (reference to Plan)
 	- reference (e.g. domains, User can’t have multiple subscriptions with same Reference)
+	- dateExpires
 - **Services** (e.g. access to something, included in Plan)
 	- name
+	- reference (slug)
 	- description
 - **Consumables** (e.g. projects, users - limited by Plan)
 
@@ -86,21 +97,23 @@ Server will default to **http://localhost:3034**
 
 #### Create new account
 
-	curl -X POST http://localhost:3034/api/accounts -H "Content-Type: application/json" -d '{ "name": "My Company", "email": "invoices@mycompany.com" }'
+	curl -X POST http://localhost:3034/api/accounts -H "Content-Type: application/json" -d '{ "name": "My Company" }'
 
 ### Users
 
 #### Create new user
 
-	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "user1", "account": "my-company" }'
+Note: `reference` is where you use your main permanent user ID, e.g. from another app.
+
+	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "userId1", "account": "my-company" }'
 
 #### Create new user and account
 
-	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "user2", "account": { "name": "My Company 2", "email": "invoices@mycompany2.com" } }'
+	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "userId2", "account": { "name": "My Company 2", "email": "invoices@mycompany2.com" } }'
 
 #### Get user
 
-	GET /api/users/:reference
+	curl -X GET http://localhost:3034/api/users/:reference
 
 Returns:
 
@@ -150,7 +163,7 @@ Returns:
 
 #### Get plan info
 
-	curl -X GET http://localhost:3034/api/plans/:planId
+	curl -X GET http://localhost:3034/api/plans/:reference
 
 Returns:
 
@@ -190,11 +203,11 @@ Returns:
 
 #### Update subscription
 
-	curl -X PUT http://localhost:3034/api/accounts/my-company/subscriptions/:subId -H "Content-Type: application/json" -d '{ ... }'
+	curl -X PUT http://localhost:3034/api/accounts/my-company/subscriptions/:reference -H "Content-Type: application/json" -d '{ ... }'
 
 #### Stop subscription
 
-	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions/:subId 
+	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions/:reference 
 
 #### Stop all subscriptions
 
