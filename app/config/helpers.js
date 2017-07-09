@@ -52,6 +52,9 @@ module.exports.sendResponse = function (err, results, callback) {
 		if (typeof(callback) === 'function') {
 			callback(results);
 		}
+		else if (results.toJSON) {
+			return this.json(results.toJSON());
+		}
 		else {
 			return this.json(results);
 		}
@@ -62,21 +65,26 @@ module.exports.sendRequestResponse = function (req, res, next) {
 	module.exports.sendResponse.call(res, null, req.crudify.result);
 };
 
-const stripIds = (options, obj) => {
-	let newObj = obj.toObject();
+module.exports.stripIdsFromRet = function (doc, ret) {
+	delete ret._id;
+	delete ret.__v;
+};
+module.exports.stripIdsFromThis = function (options) {
+	let newObj = this.toObject();
 	delete newObj._id;
 	delete newObj.__v;
 	return newObj;
 }
+const stripIdsFromObject = (options, obj) => module.exports.stripIdsFromThis.call(obj, options);
 
 module.exports.stripIdsFromResult = function (options, req, res, next) {
 	if (req.crudify.result.length !== undefined) {
 		// Array
-		req.crudify.result = _.map(req.crudify.result, stripIds.bind(this, options));
+		req.crudify.result = _.map(req.crudify.result, stripIdsFromObject.bind(this, options));
 	}
 	else {
 		// One object
-		req.crudify.result = stripIds(options, req.crudify.result);
+		req.crudify.result = stripIdsFromObject(options, req.crudify.result);
 	}
 	next();
 };

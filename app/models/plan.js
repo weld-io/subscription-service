@@ -32,6 +32,11 @@ const PlanSchema = new Schema({
 	trialDays: { type: Number },
 	consumables: [Consumable], // see above
 	services: [{ type: Schema.Types.ObjectId, ref: 'Service' }], // see service.js
+},
+{
+	toJSON: {
+		transform: helpers.stripIdsFromRet,
+	}
 });
 
 // Set reference/slug

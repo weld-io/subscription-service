@@ -15,6 +15,11 @@ const ServiceSchema = new Schema({
 	name: { type: String },
 	description: { type: String },
 	dateCreated: { type: Date, default: Date.now },
+},
+{
+	toJSON: {
+		transform: helpers.stripIdsFromRet,
+	}
 });
 
 // Set reference/slug

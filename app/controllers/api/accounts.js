@@ -27,7 +27,7 @@ module.exports = function (app, config, authController) {
 			],
 			endResponseInAction: false,
 			afterActions: [
-				{ middlewares: [helpers.stripIdsFromResult.bind(this, { identifyingKey: identifyingKey }), helpers.sendRequestResponse] },
+				{ middlewares: [helpers.sendRequestResponse] },
 			],
 		})
 	);

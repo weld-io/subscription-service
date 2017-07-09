@@ -35,8 +35,8 @@ const AccountSchema = new Schema({
 	subscriptions: [Subscription],
 },
 {
-	toObject: {
-		virtuals: true,
+	toJSON: {
+		transform: helpers.stripIdsFromRet,
 	}
 });
 
@@ -45,9 +45,5 @@ AccountSchema.pre('validate', function (next) {
 	this.reference = helpers.toSlug(this.reference || this.name || this.email);
 	next();
 });
-
-// AccountSchema.virtual('testVirtual').get(function () {
-// 	return 'virtual_' + this._id;
-// });
 
 mongoose.model('Account', AccountSchema);

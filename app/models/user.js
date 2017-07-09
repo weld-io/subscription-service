@@ -8,6 +8,7 @@
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const helpers = require('../config/helpers');
 
 // Consumable: e.g. projects, documents
 const UserConsumable = new Schema({
@@ -20,6 +21,11 @@ const UserSchema = new Schema({
 	account: { type: Schema.Types.ObjectId, ref: 'Account', required: true },
 	dateCreated: { type: Date, default: Date.now },
 	consumables: [UserConsumable], // see above
+},
+{
+	toJSON: {
+		transform: helpers.stripIdsFromRet,
+	}
 });
 
 UserSchema.methods.getAccounts = function (callback) {
