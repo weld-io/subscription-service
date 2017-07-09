@@ -37,13 +37,24 @@ module.exports.toSlug = function (str, removeInternationalChars) {
 	}
 };
 
-// Simple JSON response, usage e.g. helpers.sendResponse.bind(res) - err, results will be appended to end
-module.exports.sendResponse = function (err, results, customErrorCode) {
-	if (err) {
-		return this.status(customErrorCode || 400).send(err);
+// Simple JSON response, usage e.g.
+// 1. helpers.sendResponse.bind(res) - err, results will be appended to end
+// 2. .find((err, results) => helpers.sendResponse.call(res, err, results))
+module.exports.sendResponse = function (err, results, callback) {
+	const errorCode = (results === undefined || results === null)
+		? 404
+		: (err ? 400 : 200);
+	//console.log('sendResponse', errorCode, err, results, typeof(callback));
+	if (errorCode !== 200) {
+		return this.status(errorCode).send({ error: err, code: errorCode });
 	}
 	else {
-		return this.json(results);
+		if (typeof(callback) === 'function') {
+			callback(results);
+		}
+		else {
+			return this.json(results);
+		}
 	}
 };
 
@@ -71,8 +82,8 @@ module.exports.populateProperties = function ({modelName, propertyName, afterPop
 
 // From reference to MongoDB _id (or multiple _id's)
 // E.g. user.account = 'my-company' --> user.account = '594e6f880ca23b37a4090fe0'
-// helpers.lookupChildIDs.bind(this, 'Service', 'reference', 'services')
-module.exports.lookupChildIDs = function ({modelName, parentCollection, childIdentifier}, req, res, next) {
+// helpers.changeReferenceToId.bind(this, 'Service', 'reference', 'services')
+module.exports.changeReferenceToId = function ({modelName, parentCollection, childIdentifier}, req, res, next) {
 	const modelObj = require('mongoose').model(modelName);
 	let searchQuery = {};
 	let lookupAction = 'find';
@@ -110,6 +121,6 @@ module.exports.lookupChildIDs = function ({modelName, parentCollection, childIde
 				err = modelName + '(s) not found: ' + req.body[parentCollection];
 			}
 		}
-		next(err);
+		next(err, results);
 	});
 };

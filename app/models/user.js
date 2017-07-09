@@ -22,4 +22,8 @@ const UserSchema = new Schema({
 	consumables: [UserConsumable], // see above
 });
 
+UserSchema.methods.getAccounts = function (callback) {
+	this.populate('account', '-_id -__v', callback);
+};
+
 mongoose.model('User', UserSchema);

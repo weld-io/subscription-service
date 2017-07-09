@@ -40,4 +40,7 @@ PlanSchema.pre('validate', function (next) {
 	next();
 });
 
+// findByReference
+PlanSchema.statics.findByReference = (reference, callback) => PlanSchema.findOne({ reference: reference }).exec(callback);
+
 mongoose.model('Plan', PlanSchema);

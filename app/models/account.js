@@ -33,6 +33,11 @@ const AccountSchema = new Schema({
 	countryCode: { type: String },
 	dateCreated: { type: Date, default: Date.now },
 	subscriptions: [Subscription],
+},
+{
+	toObject: {
+		virtuals: true,
+	}
 });
 
 // Set reference/slug
@@ -40,5 +45,9 @@ AccountSchema.pre('validate', function (next) {
 	this.reference = helpers.toSlug(this.reference || this.name || this.email);
 	next();
 });
+
+// AccountSchema.virtual('testVirtual').get(function () {
+// 	return 'virtual_' + this._id;
+// });
 
 mongoose.model('Account', AccountSchema);

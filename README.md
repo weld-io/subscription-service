@@ -34,16 +34,17 @@ Server will default to **http://localhost:3034**
 ## Development Plan
 
 - [x] Create user + account in one request
-- [ ] Find-or-create User by reference
+- [x] Subscriptions controller (by Account or User)
+- [x] Stop subscriptions by User (not Account)
+- [ ] Consumables controller - counting, routes
+- [ ] See a User's current Services
+- [ ] See a User's current Consumables
+- [ ] Find-or-create User (by reference)
 - [ ] Authentication with JWT
 - [ ] Stripe integration
 - [ ] VAT support
-- [ ] Consumables - counting, routes
-- [ ] Subscriptions controller (by Account or User)
-- [ ] Stop subscriptions by User (not Account)
-- [ ] See a User's current Services
-- [ ] See a User's current Consumables
 - [ ] Discount coupons - via [coupon-service](https://github.com/weld-io/coupon-service)
+- [ ] Set Subscription.dateExpires by "90d" or similar
 - [ ] Validations
 
 ## Entities
@@ -168,8 +169,8 @@ Returns:
 Returns:
 
 	{
-		id: 'b2b_small',
-		name: 'Enterprise: Small',
+		reference: 'standard-package',
+		name: 'Standard Package',
 		price: {
 			monthly: 149,
 			yearly: 1490,
@@ -199,19 +200,19 @@ Returns:
 
 #### Start subscription
 
-	curl -X POST http://localhost:3034/api/accounts/my-company/subscriptions -H "Content-Type: application/json" -d '{ ... }'
+	curl -X POST http://localhost:3034/api/accounts/my-company/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package" }'
 
 #### Update subscription
 
-	curl -X PUT http://localhost:3034/api/accounts/my-company/subscriptions/:reference -H "Content-Type: application/json" -d '{ ... }'
+	curl -X PUT http://localhost:3034/api/accounts/my-company/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
 
 #### Stop subscription
 
-	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions/:reference 
+	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions/:id
 
 #### Stop all subscriptions
 
-	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions 
+	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions
 
 
 ## Old API
