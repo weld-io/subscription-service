@@ -1,14 +1,14 @@
 # Subscription Service
 
-REST API service managing subscription pricing, services, consumables, VAT, etc. Built in Node.js.
+**Subscription Service** is a REST API service managing subscription pricing, services, consumables, VAT, etc. Built in Node.js.
 
-**Subscription Service** allows you to be more agile with your product offering, pricing, discounts, VAT, etc. Like [Segment](https://segment.com), but for payments.
+It allows you to be more agile with your product offering, pricing, discounts, VAT, etc. Like [Segment](https://segment.com), but for payments.
 
-This is **not a payment platform** - instead it’s a layer between your app and the payments platform ([Stripe](https://www.stripe.com) being the default).
+This is **not a payment platform** - instead it’s a layer between your app and the payment platform ([Stripe](https://www.stripe.com) being the default).
 
 ----------
 
-Made by the team at **Weld** ([www.weld.io](https://www.weld.io?utm_source=github-subscription-service)), the #codefree app and web creation tool:
+Made by the team at **Weld** ([www.weld.io](https://www.weld.io?utm_source=github-subscription-service)), the #codefree web/app creation tool:
 
 [![Weld](https://s3-eu-west-1.amazonaws.com/weld-social-and-blog/gif/weld_explained.gif?v2)](https://www.weld.io?utm_source=github-subscription-service)
 
@@ -123,8 +123,11 @@ Returns:
 	{
 		reference: xxx,
 		account: { reference: ... },
-		plans: ['b2b_small'], *
-		expiryDate: '2017-12-31',
+		activePlan: {
+			reference: 'b2b_small',
+			dateExpires: '2017-12-31',
+		},
+		plans: ['b2b_small'],
 		services: {
 			remove_watermark: {
 				name: 'Remove watermark'
@@ -141,8 +144,6 @@ Returns:
 			…
 		]
 	}
-
-*Support multiple active plans? Or just show the “best” active plan?
 
 #### Update user
 
