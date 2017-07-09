@@ -6,11 +6,20 @@
 
 'use strict';
 
+const _ = require('lodash');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const helpers = require('../config/helpers');
 
+//-----------
+
 const dateIn30Days = () => new Date((new Date()).getTime() + 30*24*60*60*1000).getTime();
+
+const showOnlyActiveSubscriptions = account => {
+	account.subscriptions = _.filter(account.subscriptions, sub => sub.dateExpires > Date.now() && sub.dateStopped === undefined);
+};
+
+//-----------
 
 const Company = new Schema({
 	name: { type: String },
@@ -23,6 +32,7 @@ const Subscription = new Schema({
 	plan: { type: Schema.Types.ObjectId, ref: 'Plan', required: true },
 	dateCreated: { type: Date, default: Date.now },
 	dateExpires: { type: Date, default: dateIn30Days },
+	dateStopped: { type: Date },
 });
 
 const AccountSchema = new Schema({
@@ -36,7 +46,10 @@ const AccountSchema = new Schema({
 },
 {
 	toJSON: {
-		transform: helpers.stripIdsFromRet,
+		transform: function (doc, ret, options) {
+			showOnlyActiveSubscriptions(ret);
+			helpers.stripIdsFromRet(doc, ret, options);
+		},
 	}
 });
 

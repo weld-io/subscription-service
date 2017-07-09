@@ -59,20 +59,17 @@ const subscriptions = {
 
 	delete: function (req, res, next) {
 		getAccountThen(req, res, account => {
-			const oldSubscriptionCount = account.subscriptions.length;
-			if (req.params.subscriptionId === undefined) {
-				// Delete all
-				account.subscriptions = [];
-			}
-			else {
-				// Delete one -> remove matching _id (note: toString - _id is object!)
-				// Can't use _.reject, must use splice, due to Mongoose
-				const subscriptionIndex = _.findIndex(account.subscriptions, sub => sub._id.toString() === req.params.subscriptionId);
-				if (subscriptionIndex >= 0) {
-					account.subscriptions.splice(subscriptionIndex, 1);
+			let subsStopped = 0;
+			_.forEach(account.subscriptions, sub => {
+				sub => sub._id.toString() === req.params.subscriptionId
+				if (req.params.subscriptionId === undefined // stop all
+					|| sub._id.toString() === req.params.subscriptionId) // stop one
+				{
+					sub.dateStopped = Date.now();
+					subsStopped++;
 				}
-			}
-			account.save((err, results) => helpers.sendResponse.call(res, err, { message: `Deleted ${oldSubscriptionCount - results.subscriptions.length} subscriptions` }));
+			});
+			account.save((err, results) => helpers.sendResponse.call(res, err, { message: `Stopped ${subsStopped} subscriptions` }));
 		});
 	},
 

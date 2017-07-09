@@ -65,7 +65,7 @@ module.exports.sendRequestResponse = function (req, res, next) {
 	module.exports.sendResponse.call(res, null, req.crudify.result);
 };
 
-module.exports.stripIdsFromRet = function (doc, ret) {
+module.exports.stripIdsFromRet = function (doc, ret, options) {
 	delete ret._id;
 	delete ret.__v;
 };

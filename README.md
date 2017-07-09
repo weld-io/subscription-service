@@ -33,18 +33,18 @@ Server will default to **http://localhost:3034**
 
 ## Development Plan
 
-- [x] Create user + account in one request
+- [x] Create a User and Account in one request
 - [x] Subscriptions controller (by Account or User)
-- [x] Stop subscriptions by User (not Account)
-- [ ] Consumables controller - counting, routes
+- [x] Stop Subscriptions by User (not Account)
+- [x] Subscriptions should be deactivated (with timestamp), not deleted
 - [ ] See a User's current Services
-- [ ] See a User's current Consumables
 - [ ] Set Subscription.dateExpires by "90d" or similar
-- [ ] Subscriptions should be deactivated (with timestamp), not deleted
+- [ ] Consumables controller - counting, routes
+- [ ] See a User's current Consumables
 - [ ] Find-or-create User (by reference)
 - [ ] Authentication with JWT
 - [ ] Stripe integration
-- [ ] VAT support
+- [ ] VAT support: see prices with(out) VAT based on location/company
 - [ ] Discount coupons - via [coupon-service](https://github.com/weld-io/coupon-service)
 - [ ] Validations
 
@@ -207,13 +207,17 @@ Returns:
 
 #### Update subscription
 
+Partial update:
+
 	curl -X PUT http://localhost:3034/api/accounts/my-company/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
 
 #### Stop subscription
 
+Note: when you stop a subscription, it’s not deleted but a `dateStopped` is set and the subscription won’t be listed in Account/User.subscriptions.
+
 	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions/:id
 
-#### Stop all subscriptions
+Stop all subscriptions:
 
 	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions
 
