@@ -37,6 +37,9 @@ module.exports.toSlug = function (str, removeInternationalChars) {
 	}
 };
 
+// [{ reference: foo, ... }, { reference: bar, ... }] -> { foo: ..., bar: ... }
+module.exports.arrayToCollection = (array, keyField='reference') => _.reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection; }, {});
+
 // Simple JSON response, usage e.g.
 // 1. helpers.sendResponse.bind(res) - err, results will be appended to end
 // 2. .find((err, results) => helpers.sendResponse.call(res, err, results))

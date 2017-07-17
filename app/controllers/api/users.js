@@ -15,6 +15,14 @@ const Account = require('mongoose').model('Account');
 
 const identifyingKey = 'reference';
 
+const addServices = function (req, res, next) {
+	req.crudify.user.getServices((err, services) => {
+		req.crudify.result = req.crudify.result.toJSON();
+		req.crudify.result.services = services;
+		next();
+	})
+};
+
 // Public API
 
 module.exports = function (app, config, authController) {
@@ -30,6 +38,7 @@ module.exports = function (app, config, authController) {
 			],
 			endResponseInAction: false,
 			afterActions: [
+				{ middlewares: [addServices], only: ['read'] },
 				{ middlewares: [helpers.sendRequestResponse] },
 			],
 		})

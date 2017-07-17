@@ -6,9 +6,12 @@
 
 'use strict';
 
+const _ = require('lodash');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const helpers = require('../config/helpers');
+const Account = require('mongoose').model('Account');
+const Plan = require('mongoose').model('Plan');
 
 // Consumable: e.g. projects, documents
 const UserConsumable = new Schema({
@@ -24,12 +27,22 @@ const UserSchema = new Schema({
 },
 {
 	toJSON: {
-		transform: helpers.stripIdsFromRet,
+		transform: function (doc, ret, options) {
+			helpers.stripIdsFromRet(doc, ret, options);
+		},
 	}
 });
 
 UserSchema.methods.getAccounts = function (callback) {
 	this.populate('account', '-_id -__v', callback);
+};
+
+UserSchema.methods.getServices = function (callback) {
+	const planIds = _.map(this.account.subscriptions, 'plan');
+	Plan.find({ '_id': { $in: planIds } }).populate('services').exec((err, plans) => {
+		const allServices = _.flatten(_.map(plans, 'services'));
+		callback(null, helpers.arrayToCollection(allServices));
+	});
 };
 
 mongoose.model('User', UserSchema);

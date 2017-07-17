@@ -37,8 +37,8 @@ Server will default to **http://localhost:3034**
 - [x] Subscriptions controller (by Account or User)
 - [x] Stop Subscriptions by User (not Account)
 - [x] Subscriptions should be deactivated (with timestamp), not deleted
-- [ ] See a User's current Services
-- [ ] Set Subscription.dateExpires by "90d" or similar
+- [x] See a User’s current Services
+- [ ] Set Subscription.dateExpires by "90d" or similar (`ms` NPM)
 - [ ] Consumables controller - counting, routes
 - [ ] See a User's current Consumables
 - [ ] Find-or-create User (by reference)
@@ -79,8 +79,11 @@ For B2B apps, there can be multiple Users on each Account.
 	- description
 	- isAvailable: true/false
 	- services (Array)
-	- pricePerMonth
-	- pricePerYear
+	- price
+		- monthly
+		- yearly
+		- once
+		- vatIncluded
 	- consumables: { projects: 10 }
 	- trialDays: 30
 - **Subscriptions** (an Account subscribes to one or more Plans)
@@ -198,6 +201,19 @@ Returns:
 	}
 
 ***Support consumables over time? E.g 10 projects/month.
+
+#### Update plan
+
+Partial update:
+
+	curl -X PUT http://localhost:3034/api/accounts/my-company/plans/:reference -H "Content-Type: application/json" -d '{ "services": ["video-hosting"] }'
+
+#### Stop plan
+
+Note: when you stop a plan, it’s not deleted but a `dateStopped` is set and the plan won’t be listed in Account/User.plans.
+
+	curl -X DELETE http://localhost:3034/api/accounts/my-company/plans/:reference
+
 
 ### Subscriptions
 
