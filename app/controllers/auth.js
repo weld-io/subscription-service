@@ -1,17 +1,20 @@
 'use strict';
 
-//var API_PASSWORD = process.env.MYAPPNAME_PASSWORD;
+const _ = require('lodash');
+const express = require('express');
 
-module.exports = {
+module.exports = function (app, config) {
 
-	isAuthenticated: function (req, res, next) {
-		if (true) {
-		//if (API_PASSWORD && req.query.password === API_PASSWORD) {
-			return next();
-		}
-		else {
-			return res.json(401, 'Unauthorized');
-		}
+	const router = express.Router();
+
+	// Sets the JWT properties req.user.d.uid and req.user.d.role
+	const jwt = require('express-jwt');
+
+	if (_.isEmpty(process.env.DISABLE_JWT)) {
+		app.use(jwt({ secret: process.env.JWT_SECRET }));
+	}
+	else {
+		console.log('JWT authentication is disabled.');
 	}
 
-}
+};

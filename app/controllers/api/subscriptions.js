@@ -75,7 +75,7 @@ const subscriptions = {
 
 }
 
-module.exports = function (app, config, authController) {
+module.exports = function (app, config) {
 
 	const router = express.Router();
 	app.use('/', router);

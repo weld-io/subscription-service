@@ -25,7 +25,7 @@ const addServices = function (req, res, next) {
 
 // Public API
 
-module.exports = function (app, config, authController) {
+module.exports = function (app, config) {
 
 	app.use(
 		'/api/users',

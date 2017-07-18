@@ -19,19 +19,21 @@ module.exports = function (app, config) {
 	//app.use(cors());
 
 	// Routing
-	var authController = require(config.root + '/controllers/auth');
-	// Require in all controllers
-	glob.sync(config.root + '/controllers/api/*.js').forEach(function (ctrl) {
-		require(ctrl)(app, config, authController);
-	});
 
+	// Require in Auth controller
+	const authController = require(config.root + '/controllers/auth');
+	authController(app, config);
+	// Require in all API controllers
+	glob.sync(config.root + '/controllers/api/*.js').forEach(controllerPath => require(controllerPath)(app, config));
+
+	// If no matching route found -> 404
 	app.use(function (req, res, next) {
 		var err = new Error('Not Found');
 		err.status = 404;
 		next(err);
 	});
 
-	if(app.get('env') === 'development'){
+	if (app.get('env') === 'development') {
 		app.use(function (err, req, res, next) {
 			res.status(err.status || 500);
 			res.json({

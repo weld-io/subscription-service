@@ -15,6 +15,15 @@ Made by the team at **Weld** ([www.weld.io](https://www.weld.io?utm_source=githu
 
 ## How to Run
 
+Set JWT auth secret:
+
+	export JWT_SECRET=...
+
+or no JWT:
+
+	export DISABLE_JWT=true
+
+
 Just start with:
 
 	npm run-script dev # development
@@ -38,9 +47,9 @@ Server will default to **http://localhost:3034**
 - [x] Stop Subscriptions by User (not Account)
 - [x] Subscriptions should be deactivated (with timestamp), not deleted
 - [x] See a User’s current Services
+- [x] Authentication with JWT
 - [ ] Set Subscription.dateExpires by "90d" or similar (`ms` NPM)
 - [ ] Find-or-create User (by reference)
-- [ ] Authentication with JWT
 - [ ] Stripe integration
 - [ ] VAT support: see prices with(out) VAT based on location/company
 
@@ -135,11 +144,7 @@ Returns:
 			dateExpires: '2017-12-31',
 		},
 		plans: ['b2b_small'],
-		services: {
-			remove_watermark: {
-				name: 'Remove watermark'
-			}
-		},
+		services: ['remove-watermark', 'unlimited-projects'],
 		consumables: {
 			projects: {
 				max: 10,
