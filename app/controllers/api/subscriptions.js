@@ -42,7 +42,9 @@ const subscriptions = {
 		getAccountThen(req, res, account => {
 			helpers.changeReferenceToId({ modelName:'Plan', parentCollection:'plan', childIdentifier:'reference' }, req, res, (err, results) => {
 				account.subscriptions.push(req.body);
-				account.save(helpers.sendResponse.bind(res));
+				account.save((err, accountSaved) => {
+					helpers.sendResponse.call(res, err, _.get(accountSaved, 'subscriptions'));
+				});
 			})
 		});
 	},

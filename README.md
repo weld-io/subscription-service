@@ -112,11 +112,13 @@ For B2B apps, there can be multiple Users on each Account.
 
 ## API
 
+
 ### Accounts
 
 #### Create new account
 
 	curl -X POST http://localhost:3034/api/accounts -H "Content-Type: application/json" -d '{ "name": "My Company" }'
+
 
 ### Users
 
@@ -161,11 +163,13 @@ Returns:
 
 	curl -X PUT http://localhost:3034/api/users/12345 -H "Content-Type: application/json" -d '{ "account": "my-company" }'
 
+
 ### Services
 
 #### Create new service
 
 	curl -X POST http://localhost:3034/api/services -H "Content-Type: application/json" -d '{ "name": "Image hosting", "description": "Store unlimited images in our cloud service." }'
+
 
 ### Plans
 
@@ -228,23 +232,42 @@ Note: when you stop a plan, it’s not deleted but a `dateStopped` is set and th
 
 #### Start subscription
 
-	curl -X POST http://localhost:3034/api/accounts/my-company/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package" }'
+	curl -X POST http://localhost:3034/api/accounts/:accountReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package" }'
+
+or:
+
+	curl -X POST http://localhost:3034/api/users/:userReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package" }'
+
 
 #### Update subscription
 
 Partial update:
 
-	curl -X PUT http://localhost:3034/api/accounts/my-company/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
+	curl -X PUT http://localhost:3034/api/accounts/:accountReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
+
+or:
+
+	curl -X PUT http://localhost:3034/api/users/:userReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
+
 
 #### Stop subscription
 
 Note: when you stop a subscription, it’s not deleted but a `dateStopped` is set and the subscription won’t be listed in Account/User.subscriptions.
 
-	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions/:id
+	curl -X DELETE http://localhost:3034/api/accounts/:accountReference/subscriptions/:id
+
+or:
+
+	curl -X DELETE http://localhost:3034/api/users/:userReference/subscriptions/:id
+
 
 Stop all subscriptions:
 
-	curl -X DELETE http://localhost:3034/api/accounts/my-company/subscriptions
+	curl -X DELETE http://localhost:3034/api/accounts/:accountReference/subscriptions
+
+or:
+
+	curl -X DELETE http://localhost:3034/api/users/:userReference/subscriptions
 
 
 ## Old API
