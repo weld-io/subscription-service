@@ -146,7 +146,11 @@ Returns:
 			dateExpires: '2017-12-31',
 		},
 		plans: ['b2b_small'],
-		services: ['remove-watermark', 'unlimited-projects'],
+		services: {
+			remove_watermark: {
+				name: 'Remove watermark'
+			}
+		},
 		consumables: {
 			projects: {
 				max: 10,
@@ -193,8 +197,13 @@ Returns:
 		price: {
 			monthly: 149,
 			yearly: 1490,
-			once: 150000,
+			once: 150000
+		},
+		vat: {
 			vatIncluded: true,
+			monthly: 15,
+			yearly: 149,
+			once: 15000,
 		},
 		services: {
 			remove_watermark: {

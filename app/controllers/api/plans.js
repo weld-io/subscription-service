@@ -15,6 +15,12 @@ const Plan = require('mongoose').model('Plan');
 
 const identifyingKey = 'reference';
 
+const servicesAsCollection = function (req, res, next) {
+	req.crudify.result = req.crudify.result.toJSON();
+	req.crudify.result.services = helpers.arrayToCollection(req.crudify.result.services);
+	next();
+};
+
 // Public API
 
 module.exports = function (app, config) {
@@ -30,6 +36,7 @@ module.exports = function (app, config) {
 			],
 			endResponseInAction: false,
 			afterActions: [
+				{ middlewares: [servicesAsCollection], only: ['read'] },
 				{ middlewares: [helpers.sendRequestResponse] },
 			],
 		})
