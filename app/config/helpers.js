@@ -41,6 +41,10 @@ module.exports.toSlug = function (str, removeInternationalChars) {
 module.exports.arrayToCollection = (array, keyField='reference') => _.reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection; }, {});
 _.mixin({ 'arrayToCollection': module.exports.arrayToCollection });
 
+// applyToAll(func, obj1) or applyToAll(func, [obj1, obj2, ...])
+module.exports.applyToAll = (func, objectOrArray) => Array.isArray(objectOrArray) ? _.map(objectOrArray, func) : func(objectOrArray);
+_.mixin({ 'applyToAll': module.exports.applyToAll });
+
 // Simple JSON response, usage e.g.
 // 1. helpers.sendResponse.bind(res) - err, results will be appended to end
 // 2. .find((err, results) => helpers.sendResponse.call(res, err, results))
@@ -73,25 +77,25 @@ module.exports.stripIdsFromRet = function (doc, ret, options) {
 	delete ret._id;
 	delete ret.__v;
 };
-module.exports.stripIdsFromThis = function (options) {
-	let newObj = this.toObject();
-	delete newObj._id;
-	delete newObj.__v;
-	return newObj;
-}
-const stripIdsFromObject = (options, obj) => module.exports.stripIdsFromThis.call(obj, options);
+// module.exports.stripIdsFromThis = function (options) {
+// 	let newObj = this.toObject();
+// 	delete newObj._id;
+// 	delete newObj.__v;
+// 	return newObj;
+// }
+// const stripIdsFromObject = (options, obj) => module.exports.stripIdsFromThis.call(obj, options);
 
-module.exports.stripIdsFromResult = function (options, req, res, next) {
-	if (req.crudify.result.length !== undefined) {
-		// Array
-		req.crudify.result = _.map(req.crudify.result, stripIdsFromObject.bind(this, options));
-	}
-	else {
-		// One object
-		req.crudify.result = stripIdsFromObject(options, req.crudify.result);
-	}
-	next();
-};
+// module.exports.stripIdsFromResult = function (options, req, res, next) {
+// 	if (req.crudify.result.length !== undefined) {
+// 		// Array
+// 		req.crudify.result = _.map(req.crudify.result, stripIdsFromObject.bind(this, options));
+// 	}
+// 	else {
+// 		// One object
+// 		req.crudify.result = stripIdsFromObject(options, req.crudify.result);
+// 	}
+// 	next();
+// };
 
 // E.g. populate user.account with full Account structure
 // helpers.populateProperties.bind(this, 'user', 'account')
