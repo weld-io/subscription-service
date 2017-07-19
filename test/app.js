@@ -1,5 +1,52 @@
 'use strict';
 
+const test = require('tape');
+const request = require('supertest');
+const async = require('async');
+
+test('Test the entire API', function (assert) {
+	const app = require('../app/app');
+	async.waterfall([
+			(cb) => request(app).get('/api/accounts').expect(200, cb),
+			(results, cb) => { assert.ok(results.body.length, 'Returned accounts list'); cb(null, results); },
+			(results, cb) => { assert.ok(results.body[0].reference, 'account #0 has reference'); cb(null, results); },
+			(results, cb) => request(app).get('/api/plans').expect(200, cb),
+			(results, cb) => request(app).get('/api/services').expect(200, cb),
+			(results, cb) => request(app).get('/api/users').expect(200, cb),
+		],
+		(err, results) => {
+			app.closeDatabase();
+			assert.end();
+		}
+	);
+});
+
+
+// cb => { request(app).get('/new').expect(200, cb); },
+// cb => { request(app).post('/').send({prop1: 'new'}).expect(404, cb); },
+// cb => { request(app).get('/0').expect(200, cb); },
+// cb => { request(app).get('/0/edit').expect(404, cb); },
+// cb => { request(app).put('/0').send({prop1: 'new value'}).expect(404, cb); },
+// cb => { request(app).delete('/0').expect(404, cb); },
+
+// test('Accounts: List', function (assert) {
+// 	const app = require('../app/app');
+// 	request(app)
+// 		.get('/api/accounts')
+// 		.expect('Content-Type', /json/)
+// 		.expect(200)
+// 		.end(function (err, results) {
+// 			assert.error(err, 'No error');
+// 			assert.ok(results.body.length, 'Returned accounts list');
+// 			assert.ok(results.body[0], 'account #0 existed');
+// 			assert.ok(results.body[0].reference, 'account #0 has reference');
+// 			assert.ok(results.body[0].dateCreated, 'account #0 has dateCreated');
+// 			//assert.same(results.body, expectedUsers, 'Users as expected');
+// 			assert.end();
+// 			app.closeDatabase();
+// 		});
+// });
+
 // https://github.com/substack/tape
 
 /*
@@ -32,9 +79,6 @@ t.test(name, [opts], cb)
 t.comment(message)
 */
 
-var test = require('tape');
-var request = require('supertest');
-
 // test('Codegenerator', function (t) {
 // 	var codegenerator = require('../app/lib/codegenerator');
 // 	t.plan(3);
@@ -44,21 +88,3 @@ var request = require('supertest');
 // 	t.equal(codegenerator.generateCode(1000000), 'fakiqevo');
 // 	t.end();
 // });
-
-test('Accounts: List', function (t) {
-	var app = require('../app/app');
-	request(app)
-		.get('/api/accounts')
-		.expect('Content-Type', /json/)
-		.expect(200)
-		.end(function (err, res) {
-			t.error(err, 'No error');
-			t.ok(res.body.length, 'Returned accounts list');
-			t.ok(res.body[0], 'account #0 existed');
-			t.ok(res.body[0].reference, 'account #0 has reference');
-			t.ok(res.body[0].dateCreated, 'account #0 has dateCreated');
-			//t.same(res.body, expectedUsers, 'Users as expected');
-			t.end();
-			app.closeDatabase();
-		});
-});
