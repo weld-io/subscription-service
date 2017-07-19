@@ -40,8 +40,8 @@ UserSchema.methods.getAccounts = function (callback) {
 UserSchema.methods.getServices = function (callback) {
 	const planIds = _.map(this.account.subscriptions, 'plan');
 	Plan.find({ '_id': { $in: planIds } }).populate('services').exec((err, plans) => {
-		const allServices = _.flatten(_.map(plans, 'services'));
-		callback(null, helpers.arrayToCollection(allServices));
+		const allServiceReferences = _(plans).map('services').flatten().map('reference').uniq();
+		callback(null, allServiceReferences);
 	});
 };
 
