@@ -26,7 +26,7 @@ or no JWT:
 
 Just start with:
 
-	npm run-script dev # development
+	npm run dev # development
 
 or
 

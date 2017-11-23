@@ -4,7 +4,7 @@ var bodyParser = require('body-parser');
 var compress = require('compression');
 //var cookieParser = require('cookie-parser');
 //var methodOverride = require('method-override');
-//var cors = require('cors');
+var cors = require('cors');
 
 module.exports = function (app, config) {
 
@@ -16,13 +16,14 @@ module.exports = function (app, config) {
 	app.use(compress());
 	//app.use(cookieParser());
 	//app.use(methodOverride());
-	//app.use(cors());
+	app.use(cors());
 
 	// Routing
 
 	// Require in Auth controller
 	const authController = require(config.root + '/controllers/auth');
 	authController(app, config);
+
 	// Require in all API controllers
 	glob.sync(config.root + '/controllers/api/*.js').forEach(controllerPath => require(controllerPath)(app, config));
 
