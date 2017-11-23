@@ -24,6 +24,7 @@ const servicesAsCollection = function (req, res, next) {
 const showCorrectVAT = function (req, res, next) {
 	if (req.crudify.result.toJSON) req.crudify.result = req.crudify.result.toJSON();
 
+	// TODO: make these not hardcoded
 	const vatPercent = 0.25;
 	const shouldUserPayVAT = false;
 	const vatIncludedInPrice = true;
@@ -60,6 +61,12 @@ const showCorrectVAT = function (req, res, next) {
 	next();
 };
 
+const sortByPosition = function (req, res, next) {
+	if (req.crudify.result.toJSON) req.crudify.result = req.crudify.result.toJSON();
+	req.crudify.result = _.sortBy(req.crudify.result, ['position']);
+	next();
+};
+
 // Public API
 
 module.exports = function (app, config) {
@@ -77,6 +84,7 @@ module.exports = function (app, config) {
 			afterActions: [
 				{ middlewares: [servicesAsCollection], only: ['read'] },
 				{ middlewares: [showCorrectVAT], only: ['read', 'list'] },
+				{ middlewares: [sortByPosition], only: ['list'] },
 				{ middlewares: [helpers.sendRequestResponse] },
 			],
 		})
