@@ -90,6 +90,9 @@ For B2B apps, there can be multiple Users on each Account.
 	- name
 	- reference (slug)
 	- description
+	- features (string array)
+	- tags (string array)
+	- position (order in a list)
 	- isAvailable: true/false
 	- services (Array)
 	- price
