@@ -47,15 +47,16 @@ Server will default to **http://localhost:3034**
 - [x] Stop Subscriptions by User (not Account)
 - [x] Subscriptions should be deactivated (with timestamp), not deleted
 - [x] See a User’s current Services
-- [x] Authentication with JWT
+- [ ] Authentication with JWT
+- [x] VAT support: see prices with(out) VAT based on location/company
+- [ ] Show plans by tag
 - [ ] Set Subscription.dateExpires by "90d" or similar (`ms` NPM)
 - [ ] Find-or-create User (by reference)
 - [ ] Stripe integration
-- [ ] VAT support: see prices with(out) VAT based on location/company
 
 v2:
 
-- [ ] Discount coupons - via [coupon-service](https://github.com/weld-io/coupon-service)
+- [ ] Discount coupons - merge/via [coupon-service](https://github.com/weld-io/coupon-service)
 - [ ] Consumables controller - counting, routes
 - [ ] See a User's current Consumables
 - [ ] Validations
@@ -96,8 +97,8 @@ For B2B apps, there can be multiple Users on each Account.
 	- isAvailable: true/false
 	- services (Array)
 	- price
-		- monthly
-		- yearly
+		- month
+		- year
 		- once
 		- vatIncluded
 	- consumables: { projects: 10 }
@@ -182,7 +183,7 @@ Returns:
 
 #### Create new plan
 
-	curl -X POST http://localhost:3034/api/plans -H "Content-Type: application/json" -d '{ "name": "Standard package", "price": { "monthly": 9.99 }, "services": ["image-hosting"] }'
+	curl -X POST http://localhost:3034/api/plans -H "Content-Type: application/json" -d '{ "name": "Standard package", "price": { "month": 9.99 }, "services": ["image-hosting"] }'
 
 #### List plans
 
@@ -198,14 +199,14 @@ Returns:
 		reference: 'standard-package',
 		name: 'Standard Package',
 		price: {
-			monthly: 149,
-			yearly: 1490,
+			month: 149,
+			year: 1490,
 			once: 150000
 		},
 		vat: {
 			vatIncluded: true,
-			monthly: 15,
-			yearly: 149,
+			month: 15,
+			year: 149,
 			once: 15000,
 		},
 		services: {

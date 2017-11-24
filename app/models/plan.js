@@ -25,10 +25,10 @@ const PlanSchema = new Schema({
 	tags: [String],
 	position: Number, // index in lists, lower comes first
 	dateCreated: { type: Date, default: Date.now },
-	isAvailable: { type: Boolean, default: true }, // false: retired plan
+	isAvailable: { type: Boolean, default: true }, // false = a retired plan
 	price: {
-		monthly: Number,
-		yearly: Number,
+		month: Number,
+		year: Number,
 		once: Number,
 		vatIncluded: Boolean,
 	},
