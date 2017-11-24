@@ -41,8 +41,6 @@ const showCorrectVAT = function (req, res, next) {
 	helpers.convertToJsonIfNeeded(req.crudify.result);
 
 	const vatPercent = (process.env.VAT_PERCENT || 25) / 100;
-	// TODO: make this not hardcoded
-	const shouldUserPayVAT = true;
 
 	const calculateVatAmount = (amount, percent, isIncluded, userPaysVAT) => _.round(
 			userPaysVAT
@@ -67,8 +65,8 @@ const showCorrectVAT = function (req, res, next) {
 		plan.vat = {};
 		_.forEach(plan.price, (amount, timeUnit) => {
 			if (timeUnit !== 'vatIncluded') {
-				plan.vat[timeUnit] = calculateVatAmount(amount, vatPercent, plan.price.vatIncluded, shouldUserPayVAT);
-				plan.price[timeUnit] = calculatePriceAmount(amount, vatPercent, plan.price.vatIncluded, shouldUserPayVAT);
+				plan.vat[timeUnit] = calculateVatAmount(amount, vatPercent, plan.price.vatIncluded, (req.query.includeVAT !== 'false'));
+				plan.price[timeUnit] = calculatePriceAmount(amount, vatPercent, plan.price.vatIncluded, (req.query.includeVAT !== 'false'));
 			}
 		})
 		return plan;
