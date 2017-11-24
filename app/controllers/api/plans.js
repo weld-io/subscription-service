@@ -15,6 +15,20 @@ const Plan = require('mongoose').model('Plan');
 
 const identifyingKey = 'reference';
 
+const listPlans = (req, res, next) => {
+	let query = {};
+	if (!_.isEmpty(req.query.tag)) {
+		query.tags = req.query.tag;
+	}
+	const sorting = { position: 1 };
+	Plan.find(query).sort(sorting).exec((err, result) => {
+		req.crudify = req.crudify || {};
+		req.crudify.err = err;
+		req.crudify.result = result;
+		next();
+	});
+}
+
 const servicesAsCollection = function (req, res, next) {
 	const convertServices = plan => {
 		plan = helpers.convertToJsonIfNeeded(plan);
@@ -95,6 +109,10 @@ module.exports = function (app, config) {
 				{ middlewares: [helpers.changeReferenceToId.bind(this, { modelName:'Service', parentCollection:'services', childIdentifier:'reference' })], only: ['create'] },
 				{ middlewares: [helpers.populateProperties.bind(this, { modelName:'plan', propertyName:'services' })], only: ['read'] },
 			],
+			actions: {
+				// override list
+				list: listPlans,
+			},
 			endResponseInAction: false,
 			afterActions: [
 				{ middlewares: [servicesAsCollection], only: ['read'] }, // see also populateProperties above

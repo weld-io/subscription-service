@@ -49,7 +49,7 @@ Server will default to **http://localhost:3034**
 - [x] See a User’s current Services
 - [ ] Authentication with JWT
 - [x] VAT support: see prices with(out) VAT based on location/company
-- [ ] Show plans by tag
+- [x] Show plans by tag
 - [ ] Set Subscription.dateExpires by "90d" or similar (`ms` NPM)
 - [ ] Find-or-create User (by reference)
 - [ ] Stripe integration
