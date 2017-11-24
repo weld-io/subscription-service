@@ -37,6 +37,8 @@ module.exports.toSlug = function (str, removeInternationalChars) {
 	}
 };
 
+module.exports.convertToJsonIfNeeded = obj => obj.toJSON ? obj = obj.toJSON() : obj;
+
 // [{ reference: foo, ... }, { reference: bar, ... }] -> { foo: ..., bar: ... }
 module.exports.arrayToCollection = (array, keyField='reference') => _.reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection; }, {});
 _.mixin({ 'arrayToCollection': module.exports.arrayToCollection });
@@ -77,25 +79,6 @@ module.exports.stripIdsFromRet = function (doc, ret, options) {
 	delete ret._id;
 	delete ret.__v;
 };
-// module.exports.stripIdsFromThis = function (options) {
-// 	let newObj = this.toObject();
-// 	delete newObj._id;
-// 	delete newObj.__v;
-// 	return newObj;
-// }
-// const stripIdsFromObject = (options, obj) => module.exports.stripIdsFromThis.call(obj, options);
-
-// module.exports.stripIdsFromResult = function (options, req, res, next) {
-// 	if (req.crudify.result.length !== undefined) {
-// 		// Array
-// 		req.crudify.result = _.map(req.crudify.result, stripIdsFromObject.bind(this, options));
-// 	}
-// 	else {
-// 		// One object
-// 		req.crudify.result = stripIdsFromObject(options, req.crudify.result);
-// 	}
-// 	next();
-// };
 
 // E.g. populate user.account with full Account structure
 // helpers.populateProperties.bind(this, 'user', 'account')

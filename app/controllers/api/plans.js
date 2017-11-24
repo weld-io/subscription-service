@@ -16,18 +16,33 @@ const Plan = require('mongoose').model('Plan');
 const identifyingKey = 'reference';
 
 const servicesAsCollection = function (req, res, next) {
-	if (req.crudify.result.toJSON) req.crudify.result = req.crudify.result.toJSON();
-	req.crudify.result.services = helpers.arrayToCollection(req.crudify.result.services);
+	const convertServices = plan => {
+		plan = helpers.convertToJsonIfNeeded(plan);
+		plan.services = helpers.arrayToCollection(plan.services);
+		return plan;
+	};
+
+	req.crudify.result = helpers.applyToAll(convertServices, req.crudify.result);
+	next();
+};
+
+const addUsersActivePlan = function (req, res, next) {
+	const checkActivePlan = plan => {
+		plan = helpers.convertToJsonIfNeeded(plan);
+		plan.isActive = false; // TODO: replace with user subscription check
+		return plan;
+	};
+
+	req.crudify.result = helpers.applyToAll(checkActivePlan, req.crudify.result);
 	next();
 };
 
 const showCorrectVAT = function (req, res, next) {
-	if (req.crudify.result.toJSON) req.crudify.result = req.crudify.result.toJSON();
+	helpers.convertToJsonIfNeeded(req.crudify.result);
 
-	// TODO: make these not hardcoded
-	const vatPercent = 0.25;
-	const shouldUserPayVAT = false;
-	const vatIncludedInPrice = true;
+	const vatPercent = (process.env.VAT_PERCENT || 25) / 100;
+	// TODO: make this not hardcoded
+	const shouldUserPayVAT = true;
 
 	const calculateVatAmount = (amount, percent, isIncluded, userPaysVAT) => _.round(
 			userPaysVAT
@@ -48,11 +63,13 @@ const showCorrectVAT = function (req, res, next) {
 		, 3);
 
 	const calculatePlanVAT = plan => {
-		if (plan.toJSON) plan = plan.toJSON();
+		helpers.convertToJsonIfNeeded(plan);
 		plan.vat = {};
 		_.forEach(plan.price, (amount, timeUnit) => {
-			plan.vat[timeUnit] = calculateVatAmount(amount, vatPercent, vatIncludedInPrice, shouldUserPayVAT);
-			plan.price[timeUnit] = calculatePriceAmount(amount, vatPercent, vatIncludedInPrice, shouldUserPayVAT);
+			if (timeUnit !== 'vatIncluded') {
+				plan.vat[timeUnit] = calculateVatAmount(amount, vatPercent, plan.price.vatIncluded, shouldUserPayVAT);
+				plan.price[timeUnit] = calculatePriceAmount(amount, vatPercent, plan.price.vatIncluded, shouldUserPayVAT);
+			}
 		})
 		return plan;
 	};
@@ -62,7 +79,7 @@ const showCorrectVAT = function (req, res, next) {
 };
 
 const sortByPosition = function (req, res, next) {
-	if (req.crudify.result.toJSON) req.crudify.result = req.crudify.result.toJSON();
+	helpers.convertToJsonIfNeeded(req.crudify.result);
 	req.crudify.result = _.sortBy(req.crudify.result, ['position']);
 	next();
 };
@@ -82,8 +99,9 @@ module.exports = function (app, config) {
 			],
 			endResponseInAction: false,
 			afterActions: [
-				{ middlewares: [servicesAsCollection], only: ['read'] },
-				{ middlewares: [showCorrectVAT], only: ['read', 'list'] },
+				{ middlewares: [servicesAsCollection], only: ['read'] }, // see also populateProperties above
+				{ middlewares: [showCorrectVAT], only: ['list', 'read'] },
+				{ middlewares: [addUsersActivePlan], only: ['list', 'read'] },
 				{ middlewares: [sortByPosition], only: ['list'] },
 				{ middlewares: [helpers.sendRequestResponse] },
 			],

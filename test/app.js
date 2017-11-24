@@ -7,11 +7,22 @@ const async = require('async');
 test('Test the entire API', function (assert) {
 	const app = require('../app/app');
 	async.waterfall([
+			// Accounts
 			(cb) => request(app).get('/api/accounts').expect(200, cb),
 			(results, cb) => { assert.ok(results.body.length, 'Returned accounts list'); cb(null, results); },
 			(results, cb) => { assert.ok(results.body[0].reference, 'account #0 has reference'); cb(null, results); },
+
+			// Plans
 			(results, cb) => request(app).get('/api/plans').expect(200, cb),
+			(results, cb) => { assert.ok(results.body[0].reference, 'plan #0 has reference'); cb(null, results); },
+			// get
+			(results, cb) => request(app).get('/api/plans/single_website').expect(200, cb),
+			(results, cb) => { assert.equal(typeof(results.body.services), 'object', 'plan’s services are objects'); cb(null, results); },
+
+			// Services
 			(results, cb) => request(app).get('/api/services').expect(200, cb),
+
+			// Users
 			(results, cb) => request(app).get('/api/users').expect(200, cb),
 		],
 		(err, results) => {
