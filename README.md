@@ -47,20 +47,23 @@ Server will default to **http://localhost:3034**
 - [x] Stop Subscriptions by User (not Account)
 - [x] Subscriptions should be deactivated (with timestamp), not deleted
 - [x] See a User’s current Services
-- [ ] Authentication with JWT
+- [x] Authentication with JWT
+- [ ] Check that it's the authenticated User that operates
+- [ ] Multiple subscriptions, how to deal?
 - [x] VAT support: see prices with(out) VAT based on location/company
 - [x] Show plans by tag
-- [ ] Set Subscription.dateExpires by "90d" or similar (`ms` NPM)
-- [ ] Find-or-create User (by reference)
+- [x] Show plan (and activePlan?) on User
 - [ ] Stripe integration
+- [ ] Tests
 
 v2:
 
+- [ ] Find-or-Create User (by reference)
 - [ ] Discount coupons - merge/via [coupon-service](https://github.com/weld-io/coupon-service)
 - [ ] Consumables controller - counting, routes
 - [ ] See a User's current Consumables
+- [ ] Set Subscription.dateExpires by "90d" or similar (`ms` NPM)
 - [ ] Validations
-- [ ] Tests
 
 
 ## Entities
@@ -112,6 +115,15 @@ For B2B apps, there can be multiple Users on each Account.
 	- reference (slug)
 	- description
 - **Consumables** (e.g. projects, users - limited by Plan)
+
+
+## Environment variables
+
+* `JWT_SECRET`: JWT secret key
+* `DISABLE_JWT`: set to "true" if you don’t want JWT authentication
+* `VAT_PERCENT`: defaults to "25".
+* `MULTIPLE_SUBSCRIPTIONS`: whether to allow multiple active subscriptions. Defaults to "no".
+* `STRIPE_SECRET_KEY`: from [Stripe dashboard](https://dashboard.stripe.com/account/apikeys)
 
 
 ## API
@@ -234,9 +246,7 @@ Partial update:
 
 	curl -X PUT http://localhost:3034/api/accounts/my-company/plans/:reference -H "Content-Type: application/json" -d '{ "services": ["video-hosting"] }'
 
-#### Stop plan
-
-Note: when you stop a plan, it’s not deleted but a `dateStopped` is set and the plan won’t be listed in Account/User.plans.
+#### Delete plan
 
 	curl -X DELETE http://localhost:3034/api/accounts/my-company/plans/:reference
 
@@ -245,11 +255,13 @@ Note: when you stop a plan, it’s not deleted but a `dateStopped` is set and th
 
 #### Start subscription
 
-	curl -X POST http://localhost:3034/api/accounts/:accountReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package" }'
+	curl -X POST http://localhost:3034/api/accounts/:accountReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package", "billing": "year" }'
 
 or:
 
 	curl -X POST http://localhost:3034/api/users/:userReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package" }'
+
+Note: `billing` defaults to "month".
 
 
 #### Update subscription

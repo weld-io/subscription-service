@@ -6,6 +6,7 @@
 
 'use strict';
 
+const _ = require('lodash');
 const mongooseCrudify = require('mongoose-crudify');
 const helpers = require('../../config/helpers');
 const User = require('mongoose').model('User');
@@ -15,9 +16,17 @@ const Account = require('mongoose').model('Account');
 
 const identifyingKey = 'reference';
 
+const addPlans = function (req, res, next) {
+	req.crudify.user.getSubscriptionPlans((err, subscriptionPlans) => {
+		req.crudify.result = helpers.convertToJsonIfNeeded(req.crudify.result);
+		req.crudify.result.plans = _(subscriptionPlans).map(subscriptionPlan => subscriptionPlan.plan.reference);
+		next();
+	})
+};
+
 const addServices = function (req, res, next) {
 	req.crudify.user.getServices((err, services) => {
-		req.crudify.result = req.crudify.result.toJSON();
+		req.crudify.result = helpers.convertToJsonIfNeeded(req.crudify.result);
 		req.crudify.result.services = services;
 		next();
 	})
@@ -38,7 +47,7 @@ module.exports = function (app, config) {
 			],
 			endResponseInAction: false,
 			afterActions: [
-				{ middlewares: [addServices], only: ['read'] },
+				{ middlewares: [addPlans, addServices], only: ['read'] },
 				{ middlewares: [helpers.sendRequestResponse] },
 			],
 		})

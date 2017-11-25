@@ -130,3 +130,9 @@ module.exports.changeReferenceToId = function ({modelName, parentCollection, chi
 		next(err, results);
 	});
 };
+
+module.exports.dateInDays = days => new Date((new Date()).getTime() + days*24*60*60*1000).getTime();
+module.exports.dateIn1Month = () => module.exports.dateInDays(31);
+module.exports.dateIn1Year = () => module.exports.dateInDays(366);
+
+module.exports.isSubscriptionActive = sub => sub.dateExpires > Date.now() && sub.dateStopped === undefined;

@@ -18,14 +18,24 @@ const Plan = require('mongoose').model('Plan');
 
 const getAccountThen = (req, res, callback) => {
 	const query = { reference: req.params.accountReference || req.params.userReference };
+	// accountReference provided
 	if (req.params.accountReference) {
 		Account.findOne(query).exec((err, results) => helpers.sendResponse.call(res, err, results, callback));
 	}
+	// userReference provided
 	else if (req.params.userReference) {
 		User.findOne(query).exec((err, results) => helpers.sendResponse.call(res, err, results, user => {
 			Account.findById(user.account).exec((err, results) => helpers.sendResponse.call(res, err, results, callback));
 		}));
 	}	
+};
+
+const stopOtherSubscriptions = (subscriptions) => {
+	if (process.env.MULTIPLE_SUBSCRIPTIONS !== 'yes') {
+		_.forEach(subscriptions, sub => {
+			sub.dateStopped = Date.now();
+		})
+	}
 }
 
 const subscriptions = {
@@ -41,7 +51,10 @@ const subscriptions = {
 	create: function (req, res, next) {
 		getAccountThen(req, res, account => {
 			helpers.changeReferenceToId({ modelName:'Plan', parentCollection:'plan', childIdentifier:'reference' }, req, res, (err, results) => {
-				account.subscriptions.push(req.body);
+				var newSubscription = req.body;
+				newSubscription.dateExpires = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
+				stopOtherSubscriptions(account.subscriptions);
+				account.subscriptions.push(newSubscription);
 				account.save((err, accountSaved) => {
 					helpers.sendResponse.call(res, err, _.get(accountSaved, 'subscriptions'));
 				});
@@ -63,7 +76,6 @@ const subscriptions = {
 		getAccountThen(req, res, account => {
 			let subsStopped = 0;
 			_.forEach(account.subscriptions, sub => {
-				sub => sub._id.toString() === req.params.subscriptionId
 				if (req.params.subscriptionId === undefined // stop all
 					|| sub._id.toString() === req.params.subscriptionId) // stop one
 				{

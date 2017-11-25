@@ -43,7 +43,7 @@ const servicesAsCollection = function (req, res, next) {
 const addUsersActivePlan = function (req, res, next) {
 	const checkActivePlan = plan => {
 		plan = helpers.convertToJsonIfNeeded(plan);
-		plan.isActive = false; // TODO: replace with user subscription check
+		plan.isActive = false; // TODO: replace with user->account->subscriptions->plan check, using req.user.d.uid
 		return plan;
 	};
 
@@ -54,7 +54,7 @@ const addUsersActivePlan = function (req, res, next) {
 const showCorrectVAT = function (req, res, next) {
 	helpers.convertToJsonIfNeeded(req.crudify.result);
 
-	const vatPercent = (process.env.VAT_PERCENT || 25) / 100;
+	const vatPercent = (parseFloat(process.env.VAT_PERCENT) || 25) / 100;
 
 	const calculateVatAmount = (amount, percent, isIncluded, userPaysVAT) => _.round(
 			userPaysVAT
@@ -115,10 +115,9 @@ module.exports = function (app, config) {
 			},
 			endResponseInAction: false,
 			afterActions: [
-				{ middlewares: [servicesAsCollection], only: ['read'] }, // see also populateProperties above
-				{ middlewares: [showCorrectVAT], only: ['list', 'read'] },
-				{ middlewares: [addUsersActivePlan], only: ['list', 'read'] },
 				{ middlewares: [sortByPosition], only: ['list'] },
+				{ middlewares: [showCorrectVAT, addUsersActivePlan], only: ['list', 'read'] },
+				{ middlewares: [servicesAsCollection], only: ['read'] }, // see also populateProperties above
 				{ middlewares: [helpers.sendRequestResponse] },
 			],
 		})

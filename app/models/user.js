@@ -37,8 +37,20 @@ UserSchema.methods.getAccounts = function (callback) {
 	this.populate('account', '-_id -__v', callback);
 };
 
+UserSchema.methods.getSubscriptionPlans = function (callback) {
+	const activeSubscriptions = _(this.account.subscriptions).filter(helpers.isSubscriptionActive).value();
+	const planIds = _.map(activeSubscriptions, 'plan');
+	Plan.find({ '_id': { $in: planIds } }).exec((err, plans) => {
+		const subscriptionPlans = _.map(activeSubscriptions, subscription => {
+			subscription.plan = _.find(plans, { _id: subscription.plan });
+			return subscription;
+		})
+		callback(null, subscriptionPlans);
+	});
+};
+
 UserSchema.methods.getServices = function (callback) {
-	const planIds = _.map(this.account.subscriptions, 'plan');
+	const planIds = _(this.account.subscriptions).filter(helpers.isSubscriptionActive).map('plan');
 	Plan.find({ '_id': { $in: planIds } }).populate('services').exec((err, plans) => {
 		const allServices = _(plans).map('services').flatten().uniq().arrayToCollection();
 		callback(null, allServices);
