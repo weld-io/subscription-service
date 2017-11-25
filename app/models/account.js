@@ -28,9 +28,11 @@ const Company = new Schema({
 const Subscription = new Schema({
 	reference: { type: String, unique: true, sparse: true }, // e.g. attached to certain consumable
 	plan: { type: Schema.Types.ObjectId, ref: 'Plan', required: true },
+	billing: { type: String, default: 'month' },
 	dateCreated: { type: Date, default: Date.now },
 	dateExpires: { type: Date, default: helpers.dateIn1Month },
 	dateStopped: { type: Date },
+	externalIds: {}, // for Stripe IDs etc
 });
 
 const AccountSchema = new Schema({
@@ -41,6 +43,7 @@ const AccountSchema = new Schema({
 	countryCode: { type: String },
 	dateCreated: { type: Date, default: Date.now },
 	subscriptions: [Subscription],
+	externalIds: {}, // for Stripe IDs etc
 },
 {
 	toJSON: {

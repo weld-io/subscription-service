@@ -11,6 +11,7 @@ const _ = require('lodash');
 const mongooseCrudify = require('mongoose-crudify');
 
 const helpers = require('../../config/helpers');
+const stripe = require('../../paymentProviders/stripe');
 
 const Account = require('mongoose').model('Account');
 const User = require('mongoose').model('User');
@@ -87,6 +88,30 @@ const subscriptions = {
 		});
 	},
 
+	extend: function (req, res, next) {
+		stripe.receiveExtendSubscription(req, function (err, customerId, subscriptionId, periodToExtend) {
+			if (!err) {
+				const query = { 'externalIds.stripeCustomer': customerId };
+				Account.findOne(query).exec((accountErr, account) => {
+					if (!accountErr && account) {
+						const matchingSubs = _.chain(account.subscriptions).filter(sub => _.get(sub, 'externalIds.stripeSubscription') === subscriptionId).value();
+						matchingSubs.forEach(sub => {
+							sub.dateExpires = periodToExtend === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
+						});
+						account.save();
+						res.send({ message: 'Updated account' });
+					}
+					else {
+						res.send({ message: 'Account not found' });
+					}
+				});
+			}
+			else {
+				res.send({ message: err });
+			}
+		})
+	},
+
 }
 
 module.exports = function (app, config) {
@@ -109,5 +134,8 @@ module.exports = function (app, config) {
 	router.put('/api/users/:userReference/subscriptions/:subscriptionId', subscriptions.update);
 	router.delete('/api/users/:userReference/subscriptions/:subscriptionId', subscriptions.delete);
 	router.delete('/api/users/:userReference/subscriptions', subscriptions.delete);
+
+	// Receive webhook from e.g. Stripe
+	router.post('/api/subscriptions/extend', subscriptions.extend);
 
 };

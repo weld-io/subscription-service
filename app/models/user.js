@@ -42,7 +42,8 @@ UserSchema.methods.getSubscriptionPlans = function (callback) {
 	const planIds = _.map(activeSubscriptions, 'plan');
 	Plan.find({ '_id': { $in: planIds } }).exec((err, plans) => {
 		const subscriptionPlans = _.map(activeSubscriptions, subscription => {
-			subscription.plan = _.find(plans, { _id: subscription.plan });
+			subscription = helpers.convertToJsonIfNeeded(subscription);
+			subscription.plan = _.chain(plans).find({ _id: subscription.plan }).pick(['name', 'reference', 'price', 'isAvailable']).value();
 			return subscription;
 		})
 		callback(null, subscriptionPlans);

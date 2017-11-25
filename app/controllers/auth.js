@@ -11,7 +11,10 @@ module.exports = function (app, config) {
 	const jwt = require('express-jwt');
 
 	if (_.isEmpty(process.env.DISABLE_JWT)) {
-		app.use(jwt({ secret: process.env.JWT_SECRET }));
+		app.use(
+			jwt({ secret: process.env.JWT_SECRET })
+				.unless({ path: ['/api/subscriptions/extend'] })
+		);
 	}
 	else {
 		console.log('JWT authentication is disabled.');

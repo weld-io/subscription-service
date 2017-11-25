@@ -295,16 +295,6 @@ or:
 	curl -X DELETE http://localhost:3034/api/users/:userReference/subscriptions
 
 
-## Old API
-
-	Create subscription: post('/users/:id/subscriptions/:subscription', sub.createSubscription);
-	Create/update subscription: post('/subscriptions', sub.createOrUpdate);
-	Webhook, extend subscription: post('/subscriptions-stripe-webhook-super-secret', sub.receiveWebhook);
-	
-	get('/users/:id/discounts/:code', sub.checkAvailableDiscount);
-	post('/users/:id/discounts/:code', sub.applyDiscount);
-
-
 ## Implementation
 
 Built on Node.js, Express, MongoDB, [mongoose-crudify](https://github.com/ryo718/mongoose-crudify).
@@ -316,3 +306,110 @@ Built on Node.js, Express, MongoDB, [mongoose-crudify](https://github.com/ryo718
 	heroku create MYAPPNAME
 	heroku addons:add mongolab
 	heroku config:set NODE_ENV=production
+
+
+## Old API
+
+	Create subscription: POST('/users/:id/subscriptions/:subscription', sub.createSubscription);
+	Create/update subscription: POST('/subscriptions', sub.createOrUpdate);
+	Webhook, extend subscription: POST('/subscriptions-stripe-webhook-super-secret', sub.receiveWebhook);
+	
+	get('/users/:id/discounts/:code', sub.checkAvailableDiscount);
+	post('/users/:id/discounts/:code', sub.applyDiscount);
+
+Database:
+
+	"externalIds": {
+		"stripeCustomer": "cus_8ApwGN99p6B2hz",
+		"stripeSubscription": "sub_8Apw7MyPmUCNTL",
+	},
+
+
+### Stripe webhook
+
+See https://stripe.com/docs/api#invoice_object
+
+	{
+		"type":"invoice.payment_succeeded",
+		"data":{
+			"object":{
+				"id":"in_196zZUCjkwdpPaFTm8GgPYth",
+				"object":"invoice",
+				"amount_due":11880,
+				"application_fee":null,
+				"attempt_count":1,
+				"attempted":true,
+				"billing":"charge_automatically",
+				"charge":"ch_196zZUCjkwdpPaFTCG1T4BZX",
+				"closed":true,
+				"currency":"sek",
+				"customer":"cus_BpmeYvqhVnkuY9",
+				"date":1477043056,
+				"description":null,
+				"discount":null,
+				"ending_balance":0,
+				"forgiven":false,
+				"lines":{
+					"data":[
+						{
+							"id":"sub_BpmewCPihjSysf",
+							"object":"line_item",
+							"amount":2000,
+							"currency":"sek",
+							"description":null,
+							"discountable":true,
+							"livemode":true,
+							"metadata":{
+
+							},
+							"period":{
+								"start":1514221509,
+								"end":1516899909
+							},
+							"plan":{
+								"id":"professional_yearly_10",
+								"object":"plan",
+								"amount":9504,
+								"created":1473759356,
+								"currency":"sek",
+								"interval":"year",
+								"interval_count":1,
+								"livemode":false,
+								"metadata":{
+
+								},
+								"name":"Weld professional website (yearly)",
+								"statement_descriptor":null,
+								"trial_period_days":null
+							},
+							"proration":false,
+							"quantity":1,
+							"subscription":null,
+							"subscription_item":"si_BpmejWAFkv1rLv",
+							"type":"subscription"
+						}
+					],
+					"has_more":false,
+					"object":"list",
+					"url":"/v1/invoices/in_196zZUCjkwdpPaFTm8GgPYth/lines"
+				},
+				"livemode":false,
+				"metadata":{
+
+				},
+				"next_payment_attempt":null,
+				"paid":true,
+				"period_end":1477043056,
+				"period_start":1477043056,
+				"receipt_number":null,
+				"starting_balance":0,
+				"statement_descriptor":null,
+				"subscription":"sub_9PpDkJFsxRMEg5",
+				"subtotal":9504,
+				"tax":2376,
+				"tax_percent":25.0,
+				"total":11880,
+				"webhooks_delivered_at":1477043069
+			}
+		}
+	}
