@@ -13,10 +13,12 @@ const helpers = require('../config/helpers');
 const Account = require('mongoose').model('Account');
 const Plan = require('mongoose').model('Plan');
 
-// Consumable: e.g. projects, documents
+// Consumable: e.g. projects, documents, domains
+// on User, not Account, to support e.g. projects per user
 const UserConsumable = new Schema({
 	name: { type: String, required: true },
 	current: { type: Number, default: 0 },
+	metadata: {}, // for extra data
 });
 
 const UserSchema = new Schema({
@@ -24,6 +26,7 @@ const UserSchema = new Schema({
 	account: { type: Schema.Types.ObjectId, ref: 'Account', required: true },
 	dateCreated: { type: Date, default: Date.now },
 	consumables: [UserConsumable], // see above
+	metadata: {}, // for extra data
 },
 {
 	toJSON: {
@@ -42,8 +45,8 @@ UserSchema.methods.getSubscriptionPlans = function (callback) {
 	const planIds = _.map(activeSubscriptions, 'plan');
 	Plan.find({ '_id': { $in: planIds } }).exec((err, plans) => {
 		const subscriptionPlans = _.map(activeSubscriptions, subscription => {
-			subscription = helpers.convertToJsonIfNeeded(subscription);
-			subscription.plan = _.chain(plans).find({ _id: subscription.plan }).pick(['name', 'reference', 'price', 'isAvailable']).value();
+			subscription.plan = _.find(plans, { _id: subscription.plan });
+			subscription.plan = _.pick(subscription.plan, ['name', 'reference', 'price', 'isAvailable']);
 			return subscription;
 		})
 		callback(null, subscriptionPlans);

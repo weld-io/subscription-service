@@ -2,39 +2,44 @@
 
 var _ = require('lodash');
 
-// Get types for all properties for the arguments object
-module.exports.logArguments = function () {
-	console.log('logArguments:');
-	for (let key in arguments)
-		console.log(`  ${key}: ${typeof(arguments[key])}`);
-};
-
-// Get types for all properties for the arguments object
-module.exports.logProperties = function (obj) {
-	console.log('logProperties:');
-	for (let key in obj)
-		console.log(`  ${key}: ${typeof(obj[key])}`);
+// Specify v2: Get all properties for an object (console.dir):
+module.exports.specify = function (obj) {
+	const getValueDescription = function (val) {
+		const objectType = Object.prototype.toString.call(val).replace('[object ', '').replace(']', '');
+		switch (objectType) {
+			case 'Object': return '{' + _.keys(val).slice(0, 7).join() + '}';
+			case 'String': return val.slice(0, 50);
+			case 'Array': return 'Array[' + val.length + ']';
+			case 'Function':
+			case 'Null':
+				return objectType.toLowerCase();
+			default: return objectType + (':' + val).slice(0, 50);
+		}
+	}
+	return _.isObjectLike(obj) ? _.mapValues(obj, val => getValueDescription(val)) : getValueDescription(obj);
 };
 
 module.exports.toSlug = function (str, removeInternationalChars) {
 	// Abort if not a proper string value
 	if (!str || typeof(str) !== 'string')
 		return str;
+	// For both
+	var newStr = str.trim()
+		.toLowerCase()
+		.replace(/ /g, '-') // space to dash
+		.replace(/_/g, '-') // underscore to dash
+	// Remove ÅÄÖ etc?
 	if (removeInternationalChars) {
-		return str
-			.trim()
-			.replace(/ /g,'-') // space to dash
-			.replace(/[^\w-]+/g,'') // remove all other characters incl. ÅÄÖ
-			.toLowerCase();
+		newStr = newStr.replace(/[^\w-]+/g,''); // remove all other characters incl. ÅÄÖ
 	}
 	else {
-		return str
-			.trim()
-			.replace(/ /g,'-') // space to dash
-			.replace(/[\t.,?;:‘’“”"'`!@#$€%^&§°*<>()\[\]\{\}_\+=\/\|\\]/g,'') // remove invalid characters
-			.replace(/---/g,'-') // fix for the ' - ' case
-			.toLowerCase();
+		newStr = newStr.replace(/[\t.,?;:‘’“”"'`!@#$€%^&§°*<>()\[\]{}_\+=\/\|\\]/g,''); // remove invalid characters but keep ÅÄÖ etc
 	}
+	// For both
+	newStr = newStr.replace(/---/g,'-') // fix for the ' - ' case
+		.replace(/--/g,'-') // fix for the '- ' case
+		.replace(/--/g,'-'); // fix for the '- ' case
+	return newStr;
 };
 
 module.exports.convertToJsonIfNeeded = obj => obj.toJSON ? obj = obj.toJSON() : obj;
@@ -51,12 +56,14 @@ _.mixin({ 'applyToAll': module.exports.applyToAll });
 // 1. helpers.sendResponse.bind(res) - err, results will be appended to end
 // 2. .find((err, results) => helpers.sendResponse.call(res, err, results))
 module.exports.sendResponse = function (err, results, callback) {
-	const errorCode = (results === undefined || results === null)
-		? 404
-		: (err ? 400 : 200);
+	const errorCode = err
+		? err.statusCode || 400
+		: (results === undefined || results === null)
+			? 404
+			: 200;
 	//console.log('sendResponse', errorCode, err, results, typeof(callback));
 	if (errorCode !== 200) {
-		return this.status(errorCode).send({ error: err, code: errorCode });
+		return this.status(errorCode).send({ code: errorCode, message: _.get(err, 'message'), error: err });
 	}
 	else {
 		if (typeof(callback) === 'function') {

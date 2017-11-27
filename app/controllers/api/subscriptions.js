@@ -6,34 +6,37 @@
 
 'use strict';
 
-const express = require('express');
 const _ = require('lodash');
+const async = require('async');
+const express = require('express');
 const mongooseCrudify = require('mongoose-crudify');
 
 const helpers = require('../../config/helpers');
-const stripe = require('../../paymentProviders/stripe');
+const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || 'stripe';
+const paymentProvider = require('../../paymentProviders/' + PAYMENT_PROVIDER);
 
 const Account = require('mongoose').model('Account');
 const User = require('mongoose').model('User');
 const Plan = require('mongoose').model('Plan');
 
-const getAccountThen = (req, res, callback) => {
+const getAccountThen = function (req, res, callback) {
 	const query = { reference: req.params.accountReference || req.params.userReference };
 	// accountReference provided
 	if (req.params.accountReference) {
-		Account.findOne(query).exec((err, results) => helpers.sendResponse.call(res, err, results, callback));
+		Account.findOne(query).exec(callback);
 	}
 	// userReference provided
 	else if (req.params.userReference) {
-		User.findOne(query).exec((err, results) => helpers.sendResponse.call(res, err, results, user => {
-			Account.findById(user.account).exec((err, results) => helpers.sendResponse.call(res, err, results, callback));
-		}));
+		User.findOne(query).exec((err, user) => {
+			Account.findById(user.account).exec(callback);
+		});
 	}	
 };
 
-const stopOtherSubscriptions = (subscriptions) => {
+// TODO: update to use Plan.allowMultiple instead (e.g. multiple domains)
+const stopOtherSubscriptions = (oldSubscriptions, newSubscription) => {
 	if (process.env.MULTIPLE_SUBSCRIPTIONS !== 'yes') {
-		_.forEach(subscriptions, sub => {
+		_.forEach(oldSubscriptions, sub => {
 			sub.dateStopped = Date.now();
 		})
 	}
@@ -50,17 +53,41 @@ const subscriptions = {
 	},
 
 	create: function (req, res, next) {
-		getAccountThen(req, res, account => {
-			helpers.changeReferenceToId({ modelName:'Plan', parentCollection:'plan', childIdentifier:'reference' }, req, res, (err, results) => {
-				var newSubscription = req.body;
-				newSubscription.dateExpires = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
-				stopOtherSubscriptions(account.subscriptions);
-				account.subscriptions.push(newSubscription);
-				account.save((err, accountSaved) => {
-					helpers.sendResponse.call(res, err, _.get(accountSaved, 'subscriptions'));
-				});
-			})
-		});
+
+		const createPaymentProviderSubscription = function (account, cb) {
+			paymentProvider.createSubscription(
+				/* user */ { reference: req.params.userReference },
+				/* account */ account,
+				/* subscription */ { plan: req.body.plan, billing: req.body.billing },
+				/* payment */ { token: req.body.token, /* taxPercent: */ },
+				cb
+			);
+		};
+
+		const getPlanId = function (user, account, subscription, cb) {
+			helpers.changeReferenceToId({ modelName:'Plan', parentCollection:'plan', childIdentifier:'reference' }, { body: subscription }, res, (err, plan) => cb(err, account, subscription));
+		};
+
+		const addSubscription = function (account, subscription, cb) {
+			subscription.dateExpires = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
+			stopOtherSubscriptions(account.subscriptions, subscription);
+			account.subscriptions.push(subscription);
+			account.save(cb);
+		};
+
+		const sendResponse = function (err, accountSaved) {
+			helpers.sendResponse.call(res, err, _.get(accountSaved, 'subscriptions'));
+		};
+
+		async.waterfall([
+				getAccountThen.bind(this, req, res),
+				createPaymentProviderSubscription,
+				getPlanId,
+				addSubscription,
+			],
+			sendResponse
+		);
+
 	},
 
 	update: function (req, res, next) {
@@ -89,17 +116,17 @@ const subscriptions = {
 	},
 
 	extend: function (req, res, next) {
-		stripe.receiveExtendSubscription(req, function (err, customerId, subscriptionId, periodToExtend) {
+		paymentProvider.receiveExtendSubscription(req, function (err, customerId, subscriptionId, periodToExtend) {
 			if (!err) {
-				const query = { 'externalIds.stripeCustomer': customerId };
+				const query = { 'metadata.stripeCustomer': customerId };
 				Account.findOne(query).exec((accountErr, account) => {
 					if (!accountErr && account) {
-						const matchingSubs = _.chain(account.subscriptions).filter(sub => _.get(sub, 'externalIds.stripeSubscription') === subscriptionId).value();
+						const matchingSubs = _.chain(account.subscriptions).filter(sub => _.get(sub, 'metadata.stripeSubscription') === subscriptionId).value();
 						matchingSubs.forEach(sub => {
 							sub.dateExpires = periodToExtend === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
 						});
 						account.save();
-						res.send({ message: 'Updated account' });
+						res.send({ message: `Updated account and ${matchingSubs.length} subscription(s)` });
 					}
 					else {
 						res.send({ message: 'Account not found' });

@@ -15,6 +15,7 @@ const ServiceSchema = new Schema({
 	name: { type: String },
 	description: { type: String },
 	dateCreated: { type: Date, default: Date.now },
+	metadata: {}, // for extra data
 },
 {
 	toJSON: {

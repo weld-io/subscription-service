@@ -22,6 +22,7 @@ const showOnlyActiveSubscriptions = account => {
 const Company = new Schema({
 	name: { type: String },
 	vatNumber: { type: String },
+	metadata: {}, // for extra data
 });
 
 // Subscription to a Plan
@@ -32,18 +33,19 @@ const Subscription = new Schema({
 	dateCreated: { type: Date, default: Date.now },
 	dateExpires: { type: Date, default: helpers.dateIn1Month },
 	dateStopped: { type: Date },
-	externalIds: {}, // for Stripe IDs etc
+	discountCode: { type: String },
+	metadata: {}, // for Stripe IDs etc
 });
 
 const AccountSchema = new Schema({
 	reference: { type: String, unique: true, required: true, sparse: true },
-	email: { type: String },
 	name: { type: String },
+	email: { type: String },
 	company: Company,
 	countryCode: { type: String },
 	dateCreated: { type: Date, default: Date.now },
 	subscriptions: [Subscription],
-	externalIds: {}, // for Stripe IDs etc
+	metadata: {}, // for Stripe IDs etc
 },
 {
 	toJSON: {
@@ -56,7 +58,7 @@ const AccountSchema = new Schema({
 
 // Set reference/slug
 AccountSchema.pre('validate', function (next) {
-	this.reference = helpers.toSlug(this.reference || this.name || this.email);
+	this.reference = helpers.toSlug(this.reference || this.name || this.email, true);
 	next();
 });
 

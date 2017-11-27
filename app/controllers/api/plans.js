@@ -16,7 +16,7 @@ const Plan = require('mongoose').model('Plan');
 const identifyingKey = 'reference';
 
 const listPlans = (req, res, next) => {
-	let query = {};
+	let query = { isAvailable: { $ne: false } };
 	if (!_.isEmpty(req.query.tag)) {
 		query.tags = req.query.tag;
 	}
