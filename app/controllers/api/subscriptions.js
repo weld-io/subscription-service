@@ -38,6 +38,7 @@ const stopOtherSubscriptions = (oldSubscriptions, newSubscription) => {
 	if (process.env.MULTIPLE_SUBSCRIPTIONS !== 'yes') {
 		_.forEach(oldSubscriptions, sub => {
 			sub.dateStopped = Date.now();
+			// TODO: also stop in Stripe
 		})
 	}
 }
@@ -71,7 +72,7 @@ const subscriptions = {
 		const addSubscription = function (account, subscription, cb) {
 			subscription.dateExpires = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
 			stopOtherSubscriptions(account.subscriptions, subscription);
-			account.subscriptions.push(subscription);
+			account.subscriptions.push(helpers.toJsonIfNeeded(subscription));
 			account.save(cb);
 		};
 

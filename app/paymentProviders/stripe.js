@@ -11,79 +11,85 @@ const _ = require('lodash');
 var STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 var stripe = require('stripe')(STRIPE_SECRET_KEY);
 
+const helpers = require('../config/helpers');
+
 // ----- Private functions -----
 
 const createStripeOptions = (user, account, subscription, payment) => {
 	// e.g. "enterprise_small_monthly"
 	const stripePlanName = `${subscription.plan}_${subscription.billing}`;
 	return {
-		description: account.reference,
+		source: payment.token,
 		plan: stripePlanName,
 		coupon: subscription.discountCode,
 		//quantity: subscription.quantity,
-		source: payment.token,
-		tax_percent: payment.taxPercent, 
-		metadata: {
-			user_id: user.reference,
-		}
+		tax_percent: payment.taxPercent,
 	};
 };
 
-const createStripeUser = function (user, account, subscription, payment, callback) {
+const createStripeUserAndSubscription = function (user, account, subscription, payment, callback) {
 
-	const stripeCustomerObj = createStripeOptions(user, account, subscription, payment);
+	let stripeCustomerObj = createStripeOptions(user, account, subscription, payment);
+	// Extra options for Create
+	_.merge(stripeCustomerObj, {
+		description: account.reference,
+		metadata: {
+			user_id: user.reference,
+		},
+	});
 
 	// Call Stripe API
 	stripe.customers.create(
 		stripeCustomerObj,
-		function (stripeErr, customer) {
+		function (stripeErr, stripeCustomer) {
 			if (stripeErr) {
 				callback(stripeErr);
 			}
 			else {
-				_.set(account, 'metadata.stripeCustomer', _.get(customer, 'id'));
-				_.set(subscription, 'metadata.stripeSubscription', _.get(customer, 'subscriptions.data.0.id'));
+				_.set(account, 'metadata.stripeCustomer', _.get(stripeCustomer, 'id'));
+				_.set(subscription, 'metadata.stripeSubscription', _.get(stripeCustomer, 'subscriptions.data.0.id'));
 				callback(null, user, account, subscription);
 			}
 		}
 	);
 };
 
-
-/*
-
-
-*/
 const updateStripeSubscription = function (user, account, subscription, payment, callback) {
 
-	var stripeSubscriptionObj = createStripeOptions(user, account, subscription, payment);
+	const stripeSubscriptionId = _.get(subscription, 'metadata.stripeSubscription');
+	const stripeSubscriptionObj = createStripeOptions(user, account, subscription, payment);
+
+	const whenDone = function (stripeErr, stripeSubscription) {
+		if (stripeErr) {
+			callback(stripeErr);
+		}
+		else {
+			_.set(subscription, 'metadata.stripeSubscription', _.get(stripeSubscription, 'id'));
+			callback(null, user, account, subscription);
+		}
+	};
 
 	// Call Stripe API
-	stripe.customers.updateSubscription(
-		account.metadata.stripeCustomer,
-		subscription.metadata.stripeSubscription,
-		stripeSubscriptionObj,
-		function (stripeErr, subscription) {
-			if (stripeErr) {
-				callback(stripeErr);
-			}
-			else {
-				subscription.metadata.stripeSubscription = subscription.id;
-				callback(null, user, account, subscription);
-			}
-		}
-	);
+	if (stripeSubscriptionId)
+		stripe.customers.updateSubscription(account.metadata.stripeCustomer, stripeSubscriptionId, stripeSubscriptionObj, whenDone);
+	else
+		stripe.customers.createSubscription(account.metadata.stripeCustomer, stripeSubscriptionObj, whenDone);
 
 };
 
 // API methods
 
 const createSubscription = function (user, account, subscription, payment, callback) {
-	if (_.has(account, 'metadata.stripeCustomer') && _.has(subscription, 'metadata.stripeSubscription')) {
-		updateStripeSubscription(user, account, subscription, payment, callback);
+
+	// NOTE: _.has() doesn't work on Mongoose objects, but _.get() does.
+	const existingSubscription = _(account.subscriptions).filter(helpers.isSubscriptionActive).find(sub => _.get(sub, 'metadata.stripeSubscription'));
+	const combinedSubscription = _.merge({}, existingSubscription, subscription);
+
+	if (_.get(account, 'metadata.stripeCustomer')) {
+		updateStripeSubscription(user, account, combinedSubscription, payment, callback);
 	}
 	else {
-		createStripeUser(user, account, subscription, payment, callback);
+		createStripeUserAndSubscription(user, account, combinedSubscription, payment, callback);
 	}
 };
 
@@ -91,6 +97,12 @@ const updateSubscription = function (user, account, subscription, callback) {
 };
 
 const deleteSubscription = function (user, account, subscription, callback) {
+	// stripe.subscriptions.del(
+	// 	"sub_BpmevXU9iarUct",
+	// 	function(err, confirmation) {
+	// 		// asynchronously called
+	// 	}
+	// );
 };
 
 const receiveExtendSubscription = function (req, callback) {
