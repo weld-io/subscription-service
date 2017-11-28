@@ -42,7 +42,7 @@ module.exports.toSlug = function (str, removeInternationalChars) {
 	return newStr;
 };
 
-module.exports.convertToJsonIfNeeded = obj => obj.toJSON ? obj = obj.toJSON() : obj;
+module.exports.toJsonIfNeeded = obj => obj.toJSON ? obj = obj.toJSON() : obj;
 
 // [{ reference: foo, ... }, { reference: bar, ... }] -> { foo: ..., bar: ... }
 module.exports.arrayToCollection = (array, keyField='reference') => _.reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection; }, {});

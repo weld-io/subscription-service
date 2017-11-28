@@ -18,7 +18,7 @@ const identifyingKey = 'reference';
 
 const addPlans = function (req, res, next) {
 	req.crudify.user.getSubscriptionPlans((err, subscriptionPlans) => {
-		req.crudify.result = helpers.convertToJsonIfNeeded(req.crudify.result);
+		req.crudify.result = helpers.toJsonIfNeeded(req.crudify.result);
 		req.crudify.result.plans = _(subscriptionPlans).map(subscriptionPlan => subscriptionPlan.plan.reference);
 		next();
 	})
@@ -26,7 +26,7 @@ const addPlans = function (req, res, next) {
 
 const addServices = function (req, res, next) {
 	req.crudify.user.getServices((err, services) => {
-		req.crudify.result = helpers.convertToJsonIfNeeded(req.crudify.result);
+		req.crudify.result = helpers.toJsonIfNeeded(req.crudify.result);
 		req.crudify.result.services = services;
 		next();
 	})

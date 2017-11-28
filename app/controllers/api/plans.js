@@ -31,7 +31,7 @@ const listPlans = (req, res, next) => {
 
 const servicesAsCollection = function (req, res, next) {
 	const convertServices = plan => {
-		plan = helpers.convertToJsonIfNeeded(plan);
+		plan = helpers.toJsonIfNeeded(plan);
 		plan.services = helpers.arrayToCollection(plan.services);
 		return plan;
 	};
@@ -42,7 +42,7 @@ const servicesAsCollection = function (req, res, next) {
 
 const addUsersActivePlan = function (req, res, next) {
 	const checkActivePlan = plan => {
-		plan = helpers.convertToJsonIfNeeded(plan);
+		plan = helpers.toJsonIfNeeded(plan);
 		plan.isActive = false; // TODO: replace with user->account->subscriptions->plan check, using req.user.d.uid
 		return plan;
 	};
@@ -52,7 +52,7 @@ const addUsersActivePlan = function (req, res, next) {
 };
 
 const showCorrectVAT = function (req, res, next) {
-	helpers.convertToJsonIfNeeded(req.crudify.result);
+	helpers.toJsonIfNeeded(req.crudify.result);
 
 	const vatPercent = (parseFloat(process.env.VAT_PERCENT) || 20) / 100;
 
@@ -75,7 +75,7 @@ const showCorrectVAT = function (req, res, next) {
 		, 3);
 
 	const calculatePlanVAT = plan => {
-		helpers.convertToJsonIfNeeded(plan);
+		helpers.toJsonIfNeeded(plan);
 		plan.vat = {};
 		_.forEach(plan.price, (amount, timeUnit) => {
 			if (timeUnit !== 'vatIncluded') {
@@ -91,7 +91,7 @@ const showCorrectVAT = function (req, res, next) {
 };
 
 const sortByPosition = function (req, res, next) {
-	helpers.convertToJsonIfNeeded(req.crudify.result);
+	helpers.toJsonIfNeeded(req.crudify.result);
 	req.crudify.result = _.sortBy(req.crudify.result, ['position']);
 	next();
 };
