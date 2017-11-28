@@ -54,7 +54,7 @@ const addUsersActivePlan = function (req, res, next) {
 const showCorrectVAT = function (req, res, next) {
 	helpers.convertToJsonIfNeeded(req.crudify.result);
 
-	const vatPercent = (parseFloat(process.env.VAT_PERCENT) || 25) / 100;
+	const vatPercent = (parseFloat(process.env.VAT_PERCENT) || 20) / 100;
 
 	const calculateVatAmount = (amount, percent, isIncluded, userPaysVAT) => _.round(
 			userPaysVAT

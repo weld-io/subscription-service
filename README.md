@@ -121,7 +121,7 @@ For B2B apps, there can be multiple Users on each Account.
 
 * `JWT_SECRET`: JWT secret key
 * `DISABLE_JWT`: set to "true" if you don’t want JWT authentication
-* `VAT_PERCENT`: defaults to "25".
+* `VAT_PERCENT`: defaults to "20" (%), as in if the price incl. VAT is $10, VAT is $2.
 * `MULTIPLE_SUBSCRIPTIONS`: whether to allow multiple active subscriptions. Defaults to "no".
 * `PAYMENT_PROVIDER`: defaults to 'stripe'. Add new Payment Providers in folder `/app/paymentProviders`.
 * `STRIPE_SECRET_KEY`: from [Stripe dashboard](https://dashboard.stripe.com/account/apikeys)
