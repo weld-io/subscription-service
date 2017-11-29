@@ -15,9 +15,14 @@ const helpers = require('../config/helpers');
 
 // ----- Private functions -----
 
+const getStripeCustomerID = account => _.get(account, 'metadata.stripeCustomer');
+const getStripeSubscriptionID = sub => _.get(sub, 'metadata.stripeSubscription');
+const getExistingStripeSubscription = subscriptions => _(subscriptions).filter(helpers.isSubscriptionActive).find(getStripeSubscriptionID);
+
 const createStripeOptions = (user, account, subscription, payment) => {
 	// e.g. "enterprise_small_monthly"
-	const stripePlanName = `${subscription.plan}_${subscription.billing}`;
+	// TODO: Fix ugly hack with isHexString to determine if it's a new plan reference, or a plan._id
+	const stripePlanName = helpers.isHexString(subscription.plan) ? undefined : `${subscription.plan}_${subscription.billing}`;
 	return {
 		source: payment.token,
 		plan: stripePlanName,
@@ -56,7 +61,8 @@ const createStripeUserAndSubscription = function (user, account, subscription, p
 
 const updateStripeSubscription = function (user, account, subscription, payment, callback) {
 
-	const stripeSubscriptionId = _.get(subscription, 'metadata.stripeSubscription');
+	const stripeCustomerId = getStripeCustomerID(account);
+	const stripeSubscriptionId = getStripeSubscriptionID(subscription);
 	const stripeSubscriptionObj = createStripeOptions(user, account, subscription, payment);
 
 	const whenDone = function (stripeErr, stripeSubscription) {
@@ -71,20 +77,22 @@ const updateStripeSubscription = function (user, account, subscription, payment,
 
 	// Call Stripe API
 	if (stripeSubscriptionId)
-		stripe.customers.updateSubscription(account.metadata.stripeCustomer, stripeSubscriptionId, stripeSubscriptionObj, whenDone);
+		stripe.customers.updateSubscription(stripeCustomerId, stripeSubscriptionId, stripeSubscriptionObj, whenDone);
 	else
-		stripe.customers.createSubscription(account.metadata.stripeCustomer, stripeSubscriptionObj, whenDone);
+		stripe.customers.createSubscription(stripeCustomerId, stripeSubscriptionObj, whenDone);
 
 };
 
+
 // API methods
 
+// CREATE
 const createSubscription = function (user, account, subscription, payment, callback) {
 
-	// NOTE: _.has() doesn't work on Mongoose objects, but _.get() does.
-	const existingSubscription = _(account.subscriptions).filter(helpers.isSubscriptionActive).find(sub => _.get(sub, 'metadata.stripeSubscription'));
+	const existingSubscription = getExistingStripeSubscription(account.subscriptions);
 	const combinedSubscription = _.merge({}, existingSubscription, subscription);
 
+	// NOTE: _.has() doesn't work on Mongoose objects, but _.get() does.
 	if (_.get(account, 'metadata.stripeCustomer')) {
 		updateStripeSubscription(user, account, combinedSubscription, payment, callback);
 	}
@@ -93,18 +101,27 @@ const createSubscription = function (user, account, subscription, payment, callb
 	}
 };
 
-const updateSubscription = function (user, account, subscription, callback) {
+// UPDATE
+const updateSubscription = function (user, account, subscription, payment, callback) {
+	// Yes, it's the same
+	createSubscription(user, account, subscription, payment, callback);
 };
 
-const deleteSubscription = function (user, account, subscription, callback) {
-	// stripe.subscriptions.del(
-	// 	"sub_BpmevXU9iarUct",
-	// 	function(err, confirmation) {
-	// 		// asynchronously called
-	// 	}
-	// );
+// DELETE
+const deleteSubscription = function (subscription, callback) {
+	const stripeSubscriptionId = getStripeSubscriptionID(subscription);
+	if (stripeSubscriptionId) {
+		stripe.subscriptions.del(stripeSubscriptionId, (stripeErr, stripeSubscription) => {
+			if (stripeErr) console.log('deleteSubscription', stripeErr);
+			if (callback) callback(stripeErr, stripeSubscription);
+		});
+	}
+	else {
+		callback();
+	}
 };
 
+// EXTEND WEBHOOK
 const receiveExtendSubscription = function (req, callback) {
 	const webhookType = _.get(req, 'body.type');
 	const externalCustomerId = _.get(req, 'body.data.object.customer');

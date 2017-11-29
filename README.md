@@ -48,22 +48,24 @@ Server will default to **http://localhost:3034**
 - [x] Subscriptions should be deactivated (with timestamp), not deleted
 - [x] See a User’s current Services
 - [x] Authentication with JWT
-- [ ] Check that it's the authenticated User that operates
-- [ ] Multiple subscriptions, how to deal?
-- [x] VAT support: see prices with(out) VAT based on location/company
+- [x] VAT support: see prices with(out) VAT
 - [x] Show plans by tag
 - [x] Show plan (and activePlan?) on User
+- [ ] Check that it's the authenticated User that operates
+- [ ] Multiple subscriptions, how to handle?
 - [ ] Stripe integration
 - [ ] Tests
 
 v2:
 
+- [ ] Transaction logging
 - [ ] Find-or-Create User (by reference)
-- [ ] Discount coupons - merge/via [coupon-service](https://github.com/weld-io/coupon-service)
+- [ ] Discount coupons - merge/use [coupon-service](https://github.com/weld-io/coupon-service)
 - [ ] Consumables controller - counting, routes
 - [ ] See a User's current Consumables
 - [ ] Set Subscription.dateExpires by "90d" or similar (`ms` NPM)
 - [ ] Validations
+- [ ] VAT based on location/company
 
 
 ## Entities
@@ -119,12 +121,12 @@ For B2B apps, there can be multiple Users on each Account.
 
 ## Environment variables
 
-* `JWT_SECRET`: JWT secret key
-* `DISABLE_JWT`: set to "true" if you don’t want JWT authentication
+* `DISABLE_JWT`: set to "true" if you don’t want JWT authentication.
+* `JWT_SECRET`: secret key for [JSON Web Token authentication](https://jwt.io).
+* `PAYMENT_PROVIDER`: defaults to 'stripe'. Add new Payment Providers in folder `/app/paymentProviders`.
+* `STRIPE_SECRET_KEY`: secret key from [Stripe dashboard](https://dashboard.stripe.com/account/apikeys).
 * `VAT_PERCENT`: defaults to "20" (%), as in if the price incl. VAT is $10, VAT is $2.
 * `MULTIPLE_SUBSCRIPTIONS`: whether to allow multiple active subscriptions. Defaults to "no".
-* `PAYMENT_PROVIDER`: defaults to 'stripe'. Add new Payment Providers in folder `/app/paymentProviders`.
-* `STRIPE_SECRET_KEY`: from [Stripe dashboard](https://dashboard.stripe.com/account/apikeys)
 
 
 ## API

@@ -33,16 +33,6 @@ const getAccountThen = function (req, res, callback) {
 	}	
 };
 
-// TODO: update to use Plan.allowMultiple instead (e.g. multiple domains)
-const stopOtherSubscriptions = (oldSubscriptions, newSubscription) => {
-	if (process.env.MULTIPLE_SUBSCRIPTIONS !== 'yes') {
-		_.forEach(oldSubscriptions, sub => {
-			sub.dateStopped = Date.now();
-			// TODO: also stop in Stripe
-		})
-	}
-}
-
 const subscriptions = {
 
 	list: function (req, res, next) {
@@ -54,6 +44,21 @@ const subscriptions = {
 	},
 
 	create: function (req, res, next) {
+
+		// TODO: update to use Plan.allowMultiple instead (e.g. multiple domains)
+		const stopOtherSubscriptions = (account, cb) => {
+
+			const stopOneSubscription = sub => {
+				sub.dateStopped = Date.now();
+				paymentProvider.deleteSubscription(sub);
+			};
+
+			if (process.env.MULTIPLE_SUBSCRIPTIONS !== 'yes') {
+				_.forEach(account.subscriptions, stopOneSubscription);
+			};
+
+			cb(null, account);
+		};
 
 		const createPaymentProviderSubscription = function (account, cb) {
 			paymentProvider.createSubscription(
@@ -71,17 +76,17 @@ const subscriptions = {
 
 		const addSubscription = function (account, subscription, cb) {
 			subscription.dateExpires = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
-			stopOtherSubscriptions(account.subscriptions, subscription);
 			account.subscriptions.push(helpers.toJsonIfNeeded(subscription));
 			account.save(cb);
 		};
 
-		const sendResponse = function (err, accountSaved) {
-			helpers.sendResponse.call(res, err, _.get(accountSaved, 'subscriptions'));
+		const sendResponse = function (err, account) {
+			helpers.sendResponse.call(res, err, _.get(account, 'subscriptions'));
 		};
 
 		async.waterfall([
 				getAccountThen.bind(this, req, res),
+				stopOtherSubscriptions,
 				createPaymentProviderSubscription,
 				getPlanId,
 				addSubscription,
@@ -92,13 +97,39 @@ const subscriptions = {
 	},
 
 	update: function (req, res, next) {
-		getAccountThen(req, res, account => {
-			const subscriptionIndex = _.findIndex(account.subscriptions, sub => sub._id.toString() === req.params.subscriptionId);
+
+		const getSubscriptionIndex = account => _.findIndex(_.get(account, 'subscriptions'), sub => sub._id.toString() === req.params.subscriptionId);
+
+		const updatePaymentProviderSubscription = function (account, cb) {
+			paymentProvider.updateSubscription(
+				/* user */ { reference: req.params.userReference },
+				/* account */ account,
+				/* subscription */ { plan: req.body.plan, billing: req.body.billing },
+				/* payment */ { token: req.body.token, /* taxPercent: */ },
+				cb
+			);
+		};
+
+		const updateSubscription = function (user, account, subscription, cb) {
+			const subscriptionIndex = getSubscriptionIndex(account);
 			if (subscriptionIndex >= 0) {
 				_.merge(account.subscriptions[subscriptionIndex], req.body);
-			}
-			account.save((err, results) => helpers.sendResponse.call(res, err, account.subscriptions[subscriptionIndex]));
-		});
+			};
+			account.save(cb);
+		};
+
+		const sendResponse = function (err, account) {
+			helpers.sendResponse.call(res, err, _.get(account, 'subscriptions.' + getSubscriptionIndex(account)));
+		};
+
+		async.waterfall([
+				getAccountThen.bind(this, req, res),
+				updatePaymentProviderSubscription,
+				updateSubscription,
+			],
+			sendResponse
+		);
+
 	},
 
 	delete: function (req, res, next) {

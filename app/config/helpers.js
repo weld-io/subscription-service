@@ -143,3 +143,5 @@ module.exports.dateIn1Month = () => module.exports.dateInDays(31);
 module.exports.dateIn1Year = () => module.exports.dateInDays(366);
 
 module.exports.isSubscriptionActive = sub => sub.dateExpires > Date.now() && sub.dateStopped === undefined;
+
+module.exports.isHexString = str => /[0-9A-Fa-f]{6}/g.test(str);
