@@ -13,7 +13,10 @@ module.exports = function (app, config) {
 	if (_.isEmpty(process.env.DISABLE_JWT)) {
 		app.use(
 			jwt({ secret: process.env.JWT_SECRET })
-				.unless({ path: ['/api/subscriptions/extend'] })
+				.unless({ path: [
+					{ url: /\/api\/plans/i, methods: ['GET'] },
+					'/api/subscriptions/extend',
+				] })
 		);
 	}
 	else {
