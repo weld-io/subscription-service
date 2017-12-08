@@ -42,8 +42,8 @@ UserSchema.methods.getAccounts = function (callback) {
 
 UserSchema.methods.getSubscriptionPlans = function (callback) {
 	const activeSubscriptions = _(this.account.subscriptions).filter(helpers.isSubscriptionActive).value();
-	const planIds = _.map(activeSubscriptions, 'plan');
-	Plan.find({ '_id': { $in: planIds } }).exec((err, plans) => {
+	const planReferences = _.map(activeSubscriptions, 'plan');
+	Plan.find({ '_id': { $in: planReferences } }).exec((err, plans) => {
 		const subscriptionPlans = _.map(activeSubscriptions, subscription => {
 			subscription.plan = _.find(plans, { _id: subscription.plan });
 			subscription.plan = _.pick(subscription.plan, ['name', 'reference', 'price', 'isAvailable']);
@@ -54,8 +54,9 @@ UserSchema.methods.getSubscriptionPlans = function (callback) {
 };
 
 UserSchema.methods.getServices = function (callback) {
-	const planIds = _(this.account.subscriptions).filter(helpers.isSubscriptionActive).map('plan');
-	Plan.find({ '_id': { $in: planIds } }).populate('services').exec((err, plans) => {
+	// 
+	const planReferences = _(this.account.subscriptions).filter(helpers.isSubscriptionActive).map('plan').map('reference').value();
+	Plan.find({ 'reference': { $in: planReferences } }).populate('services').exec((err, plans) => {
 		const allServices = _(plans).map('services').flatten().uniq().arrayToCollection();
 		callback(null, allServices);
 	});
