@@ -49,7 +49,7 @@ module.exports.arrayToCollection = (array, keyField='reference') => _.reduce(arr
 _.mixin({ 'arrayToCollection': module.exports.arrayToCollection });
 
 // applyToAll(func, obj1) or applyToAll(func, [obj1, obj2, ...])
-module.exports.applyToAll = (func, objectOrArray) => Array.isArray(objectOrArray) ? _.map(objectOrArray, func) : func(objectOrArray);
+module.exports.applyToAll = (func, objectOrArray) => objectOrArray.constructor === Array ? _.map(objectOrArray, func) : func(objectOrArray);
 _.mixin({ 'applyToAll': module.exports.applyToAll });
 
 // Simple JSON response, usage e.g.
