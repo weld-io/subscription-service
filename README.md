@@ -82,16 +82,16 @@ For B2B apps, there can be multiple Users on each Account.
 		- vatNumber
 	- countryCode
 	- discountCoupon
-	- paymentPlatforms
-		- stripe
-			- customerId
-			- subscriptionId
+	- metadata (free form data)
+		- stripeCustomerId
+		- stripeSubscriptionId
 	- subscriptions (array of Subscriptions)
 - **Users** (on an Account)
 	- reference (e.g. user ID in another app)
 	- account (reference to Account)
 	- consumables
 		- projects: 2
+	- metadata (free form data)
 - **Plans**
 	- name
 	- reference (slug)
@@ -108,14 +108,17 @@ For B2B apps, there can be multiple Users on each Account.
 		- vatIncluded
 	- consumables: { projects: 10 }
 	- trialDays: 30
+	- metadata (free form data)
 - **Subscriptions** (an Account subscribes to one or more Plans)
 	- plan (reference to Plan)
 	- reference (e.g. domains, User can’t have multiple subscriptions with same Reference)
 	- dateExpires
+	- metadata (free form data)
 - **Services** (e.g. access to something, included in Plan)
 	- name
 	- reference (slug)
 	- description
+	- metadata (free form data)
 - **Consumables** (e.g. projects, users - limited by Plan)
 
 
