@@ -36,7 +36,7 @@ const getAccountThen = function (req, res, callback) {
 const subscriptions = {
 
 	list: function (req, res, next) {
-		getAccountThen(req, res, account => res.json(account.subscriptions));
+		getAccountThen(req, res, (err, account) => res.json(account.subscriptions));
 	},
 
 	read: function (req, res, next) {
@@ -133,7 +133,7 @@ const subscriptions = {
 	},
 
 	delete: function (req, res, next) {
-		getAccountThen(req, res, account => {
+		getAccountThen(req, res, (err, account) => {
 			let subsStopped = 0;
 			_.forEach(account.subscriptions, sub => {
 				if (req.params.subscriptionId === undefined // stop all
