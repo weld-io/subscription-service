@@ -12,6 +12,7 @@ var STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 var stripe = require('stripe')(STRIPE_SECRET_KEY);
 
 const helpers = require('../config/helpers');
+const Account = require('mongoose').model('Account');
 
 // ----- Private functions -----
 
@@ -121,18 +122,29 @@ const deleteSubscription = function (subscription, callback) {
 	}
 };
 
-// EXTEND WEBHOOK
-const receiveExtendSubscription = function (req, callback) {
+// Webhook for renewal
+const receiveRenewSubscription = function (req, callback) {
 	const webhookType = _.get(req, 'body.type');
-	const externalCustomerId = _.get(req, 'body.data.object.customer');
-	const externalSubscriptionId = _.get(req, 'body.data.object.subscription');
-	console.log('Stripe "%s" webhook received', webhookType);
-	if (webhookType === 'invoice.payment_succeeded' && externalCustomerId) {
-		console.log('Stripe "invoice.payment_succeeded" webhook for customer %s', externalCustomerId);
+	const stripeCustomerId = _.get(req, 'body.data.object.customer');
+	const stripeSubscriptionId = _.get(req, 'body.data.object.subscription');
+	console.log(`Stripe "${webhookType}" webhook received`);
+	if (webhookType === 'invoice.payment_succeeded' && stripeCustomerId) {
 		const lineItems = _.get(req, 'body.data.object.lines.data');
 		// If contains 'year', then extend a year etc
-		const periodToExtend = _.some(lineItems, { plan: { interval: 'year' } }) ? 'year' : 'month';
-		callback(null, externalCustomerId, externalSubscriptionId, periodToExtend);
+		const interval = _.some(lineItems, { plan: { interval: 'year' } }) ? 'year' : 'month';
+		const intervalCount = 1;
+		console.log(`Stripe "invoice.payment_succeeded" webhook for customer ${stripeCustomerId}, subscription ${stripeSubscriptionId}, extend ${intervalCount} ${interval}(s)`);
+		// Look up Account and Subscriptions in database
+		const query = { 'metadata.stripeCustomer': stripeCustomerId };
+		Account.findOne(query).exec((accountErr, account) => {
+			if (!accountErr && account) {
+				const subscriptions = _.chain(account.subscriptions).filter(sub => _.get(sub, 'metadata.stripeSubscription') === stripeSubscriptionId).value();
+				callback(null, { account, subscriptions, interval, intervalCount });
+			}
+			else {
+				callback('Account not found');
+			}
+		});
 	}
 	else {
 		callback('No valid Stripe webhook');
@@ -150,7 +162,8 @@ module.exports = {
 
 	// https://stripe.com/docs/api#invoice_object
 
-	// callback(err, externalCustomerId, externalSubscriptionId, periodToExtend)
-	receiveExtendSubscription: receiveExtendSubscription,
+	// receiveRenewSubscription(req, callback)
+	// 	callback(err, { account, subscriptions, interval, intervalCount })
+	receiveRenewSubscription: receiveRenewSubscription,
 
 };

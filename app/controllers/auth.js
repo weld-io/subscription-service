@@ -15,7 +15,7 @@ module.exports = function (app, config) {
 			jwt({ secret: process.env.JWT_SECRET })
 				.unless({ path: [
 					{ url: /\/api\/plans/i, methods: ['GET'] },
-					'/api/subscriptions/extend',
+					'/api/subscriptions/renew',
 				] })
 		);
 	}

@@ -130,6 +130,7 @@ For B2B apps, there can be multiple Users on each Account.
 * `STRIPE_SECRET_KEY`: secret key from [Stripe dashboard](https://dashboard.stripe.com/account/apikeys).
 * `VAT_PERCENT`: defaults to "20" (%), as in if the price incl. VAT is $10, VAT is $2.
 * `MULTIPLE_SUBSCRIPTIONS`: whether to allow multiple active subscriptions. Defaults to "no".
+* `WEBHOOK_RENEW_SUBSCRIPTION`: a complete URL that will receive a POST request whenever a subscription is renewed.
 
 
 ## API
@@ -326,6 +327,30 @@ Stripe is currently the only payment provider supported, but the idea is that it
 ### Stripe example webhook
 
 See https://stripe.com/docs/api#invoice_object
+
+Smaller version with only the fields needed for Subscription Service:
+
+	{
+		"type": "invoice.payment_succeeded",
+		"data": {
+			"object": {
+				"customer": "cus_BpmeYvqhVnkuY9",
+				"subscription": "sub_9PpDkJFsxRMEg5",
+				"lines": {
+					"data": [
+						{
+							"plan": {
+								"interval": "year",
+								"interval_count": 1
+							}
+						}
+					]
+				}
+			}
+		}
+	}
+
+Complete:
 
 	{
 		"type": "invoice.payment_succeeded",

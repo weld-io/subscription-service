@@ -9,6 +9,7 @@
 const _ = require('lodash');
 const async = require('async');
 const express = require('express');
+const fetch = require('node-fetch');
 const mongooseCrudify = require('mongoose-crudify');
 
 const helpers = require('../../config/helpers');
@@ -147,26 +148,49 @@ const subscriptions = {
 		});
 	},
 
-	extend: function (req, res, next) {
-		paymentProvider.receiveExtendSubscription(req, function (err, customerId, subscriptionId, periodToExtend) {
-			if (!err) {
-				const query = { 'metadata.stripeCustomer': customerId };
-				Account.findOne(query).exec((accountErr, account) => {
-					if (!accountErr && account) {
-						const matchingSubs = _.chain(account.subscriptions).filter(sub => _.get(sub, 'metadata.stripeSubscription') === subscriptionId).value();
-						matchingSubs.forEach(sub => {
-							sub.dateExpires = periodToExtend === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
-						});
-						account.save();
-						res.send({ message: `Updated account and ${matchingSubs.length} subscription(s)` });
-					}
-					else {
-						res.send({ message: 'Account not found' });
-					}
-				});
+	renew: function (req, res, next) {
+
+		// This is the optional _outbound_ webhook to notify other webservices. It uses the WEBHOOK_RENEW_SUBSCRIPTION environment variable.
+		const postOutboundRenewWebhook = function ({ account, users, subscriptions, interval, intervalCount }, callback) {
+			if (process.env.WEBHOOK_RENEW_SUBSCRIPTION) {
+				fetch(process.env.WEBHOOK_RENEW_SUBSCRIPTION,
+						{
+							method: 'POST',
+							headers: {
+								'Accept': 'application/json',
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({
+								type: 'renew',
+								account: account,
+								users: users,
+								subscriptions: subscriptions,
+								interval: interval,
+								intervalCount: intervalCount,
+							}),
+						}
+					)
+					.then(callback);
+				if (callback) callback();
 			}
 			else {
-				res.send({ message: err });
+				if (callback) callback();
+			}
+		};
+
+		paymentProvider.receiveRenewSubscription(req, function (err, { account, subscriptions, interval, intervalCount }) {
+			if (!err) {
+				subscriptions.forEach(sub => {
+					sub.dateExpires = interval === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
+				});
+				account.save();
+				User.find({ account: account._id }).exec((err, users) => {
+					postOutboundRenewWebhook({ account, users, subscriptions, interval, intervalCount });
+				});
+				res.send({ message: `Updated account and ${subscriptions.length} subscription(s)` });
+			}
+			else {
+				res.setStatus(400).send({ message: err });
 			}
 		})
 	},
@@ -195,6 +219,6 @@ module.exports = function (app, config) {
 	router.delete('/api/users/:userReference/subscriptions', subscriptions.delete);
 
 	// Receive webhook from e.g. Stripe
-	router.post('/api/subscriptions/extend', subscriptions.extend);
+	router.post('/api/subscriptions/renew', subscriptions.renew);
 
 };
