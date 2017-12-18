@@ -26,7 +26,7 @@ const ServiceSchema = new Schema({
 // Set reference/slug
 ServiceSchema.pre('validate', function (next) {
 	const slugSuggestion = this.reference || this.name;
-	helpers.getUniqueSlugFromCollection('Service', undefined, slugSuggestion, undefined, (err, uniqueSlug) => {
+	helpers.getUniqueSlugFromCollection('Service', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
 		this.reference = uniqueSlug;
 		next();
 	});

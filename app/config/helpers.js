@@ -64,6 +64,8 @@ module.exports.getUniqueSlugFromCollection = function (collectionName, keyField=
 	searchQuery[keyField] = new RegExp('^' + newWordSlug); // begins with
 	collection.find(searchQuery).exec((err, docs) => {
 		const existingSlugsArray = _.map(docs, keyField);
+		const { documentId } = options;
+		if (documentId) options.newWordsPositionInArray = _.findIndex(docs, doc => doc._id.toString() === documentId.toString());
 		const uniqueSlug = module.exports.getUniqueSlug(existingSlugsArray, newWordSlug, options);
 		cb(err, uniqueSlug);
 	});
