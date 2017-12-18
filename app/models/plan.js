@@ -40,7 +40,7 @@ const PlanSchema = new Schema({
 },
 {
 	toJSON: {
-		transform: helpers.stripIdsFromRet,
+		//transform: helpers.stripIdsFromRet,
 	}
 });
 
