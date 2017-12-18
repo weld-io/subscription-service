@@ -58,8 +58,11 @@ const AccountSchema = new Schema({
 
 // Set reference/slug
 AccountSchema.pre('validate', function (next) {
-	this.reference = helpers.toSlug(this.reference || this.name || this.email, true);
-	next();
+	const slugSuggestion = this.reference || this.name || this.email;
+	helpers.getUniqueSlugFromCollection('Account', undefined, slugSuggestion, undefined, (err, uniqueSlug) => {
+		this.reference = uniqueSlug;
+		next();
+	});
 });
 
 mongoose.model('Account', AccountSchema);

@@ -46,8 +46,11 @@ const PlanSchema = new Schema({
 
 // Set reference/slug
 PlanSchema.pre('validate', function (next) {
-	this.reference = helpers.toSlug(this.reference || this.name);
-	next();
+	const slugSuggestion = this.reference || this.name;
+	helpers.getUniqueSlugFromCollection('Plan', undefined, slugSuggestion, undefined, (err, uniqueSlug) => {
+		this.reference = uniqueSlug;
+		next();
+	});
 });
 
 // findByReference

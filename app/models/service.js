@@ -25,8 +25,11 @@ const ServiceSchema = new Schema({
 
 // Set reference/slug
 ServiceSchema.pre('validate', function (next) {
-	this.reference = helpers.toSlug(this.reference || this.name);
-	next();
+	const slugSuggestion = this.reference || this.name;
+	helpers.getUniqueSlugFromCollection('Service', undefined, slugSuggestion, undefined, (err, uniqueSlug) => {
+		this.reference = uniqueSlug;
+		next();
+	});
 });
 
 mongoose.model('Service', ServiceSchema);

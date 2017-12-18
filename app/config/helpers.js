@@ -1,6 +1,7 @@
 'use strict';
 
-var _ = require('lodash');
+const _ = require('lodash');
+const mongoose = require('mongoose');
 
 // Specify v2: Get all properties for an object (console.dir):
 module.exports.specify = function (obj) {
@@ -40,6 +41,32 @@ module.exports.toSlug = function (str, removeInternationalChars) {
 		.replace(/--/g,'-') // fix for the '- ' case
 		.replace(/--/g,'-'); // fix for the '- ' case
 	return newStr;
+};
+
+module.exports.getUniqueSlug = function (existingSlugsArray, newWord, options={}) {
+	const { removeInternationalChars, newWordsPositionInArray } = options;
+	const slugBase = module.exports.toSlug(newWord, removeInternationalChars);
+	var attemptNr = 0;
+	var slugSuggestion;
+	do {
+		attemptNr += 1;
+		slugSuggestion = slugBase + (attemptNr > 1 ? '-' + attemptNr : '');
+	}
+	// Find a slug that either 1) is not found in existingSlugsArray, or 2) already has a specified position in existingSlugsArray
+	while (existingSlugsArray.indexOf(slugSuggestion) !== -1 && existingSlugsArray.indexOf(slugSuggestion) !== newWordsPositionInArray);
+	return slugSuggestion;
+};
+
+module.exports.getUniqueSlugFromCollection = function (collectionName, keyField='reference', newWord, options={}, cb) {
+	const collection = mongoose.model(collectionName);
+	const newWordSlug = module.exports.toSlug(newWord, true);
+	let searchQuery = {};
+	searchQuery[keyField] = new RegExp('^' + newWordSlug); // begins with
+	collection.find(searchQuery).exec((err, docs) => {
+		const existingSlugsArray = _.map(docs, keyField);
+		const uniqueSlug = module.exports.getUniqueSlug(existingSlugsArray, newWordSlug, options);
+		cb(err, uniqueSlug);
+	});
 };
 
 module.exports.toJsonIfNeeded = obj => obj.toJSON ? obj = obj.toJSON() : obj;
