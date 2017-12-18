@@ -62,13 +62,18 @@ const subscriptions = {
 		};
 
 		const createPaymentProviderSubscription = function (account, cb) {
-			paymentProvider.createSubscription(
-				/* user */ { reference: req.params.userReference },
-				/* account */ account,
-				/* subscription */ { plan: req.body.plan, billing: req.body.billing },
-				/* payment */ { token: req.body.token, /* taxPercent: */ },
-				cb
-			);
+			const user = { reference: req.params.userReference };
+			const subscription = { plan: req.body.plan, billing: req.body.billing };
+			// Use ?ignorePaymentProvider=true to avoid Stripe subscriptions being created
+			_.has(req, 'query.ignorePaymentProvider')
+				? cb(null, user, account, subscription)
+				: paymentProvider.createSubscription(
+						/* user */ user,
+						/* account */ account,
+						/* subscription */ subscription,
+						/* payment */ { token: req.body.token, /* taxPercent: */ },
+						cb
+					);
 		};
 
 		const getPlanId = function (user, account, subscription, cb) {
