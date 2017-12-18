@@ -40,21 +40,23 @@ UserSchema.methods.getAccounts = function (callback) {
 	this.populate('account', '-_id -__v', callback);
 };
 
-UserSchema.methods.getSubscriptionPlans = function (callback) {
-	const activeSubscriptions = _(this.account.subscriptions).filter(helpers.isSubscriptionActive).value();
-	const planReferences = _.map(activeSubscriptions, 'plan');
-	Plan.find({ '_id': { $in: planReferences } }).exec((err, plans) => {
-		const subscriptionPlans = _.map(activeSubscriptions, subscription => {
-			subscription.plan = _.find(plans, { _id: subscription.plan });
-			subscription.plan = _.pick(subscription.plan, ['name', 'reference', 'price', 'isAvailable']);
+// TODO: move this so 'includeAllSubscriptions' filter is used on Account too
+UserSchema.methods.getSubscriptionPlans = function (options, callback) {
+	const filterFunction = options.includeAllSubscriptions ? () => true : helpers.isSubscriptionActive;
+	const selectedSubscriptions = _(this.account.subscriptions).filter(filterFunction).value();
+	const planIds = _.map(selectedSubscriptions, 'plan');
+	Plan.find({ '_id': { $in: planIds } }).exec((err, plans) => {
+		const subscriptionsWithPlan = _.map(selectedSubscriptions, subscription => {
+			subscription = helpers.toJsonIfNeeded(subscription);
+			const planCompleteInfo = _.find(plans, { _id: subscription.plan });
+			subscription.plan = _.pick(planCompleteInfo, ['name', 'reference', 'price', 'isAvailable']);
 			return subscription;
 		})
-		callback(null, subscriptionPlans);
+		callback(null, { subscriptions: selectedSubscriptions, subscriptionsWithPlan });
 	});
 };
 
 UserSchema.methods.getServices = function (callback) {
-	// 
 	const planReferences = _(this.account.subscriptions).filter(helpers.isSubscriptionActive).map('plan').map('reference').value();
 	Plan.find({ 'reference': { $in: planReferences } }).populate('services').exec((err, plans) => {
 		const allServices = _(plans).map('services').flatten().uniq().arrayToCollection();

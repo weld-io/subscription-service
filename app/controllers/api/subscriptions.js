@@ -61,9 +61,13 @@ const subscriptions = {
 			cb(null, account);
 		};
 
-		const createPaymentProviderSubscription = function (account, cb) {
+		const createSubscriptionObject = function (account, cb) {
+			const subscription = _.merge({}, req.body);
 			const user = { reference: req.params.userReference };
-			const subscription = { plan: req.body.plan, billing: req.body.billing };
+			cb(null, user, account, subscription);
+		};
+
+		const createPaymentProviderSubscription = function (user, account, subscription, cb) {
 			// Use ?ignorePaymentProvider=true to avoid Stripe subscriptions being created
 			_.has(req, 'query.ignorePaymentProvider')
 				? cb(null, user, account, subscription)
@@ -81,7 +85,11 @@ const subscriptions = {
 		};
 
 		const addSubscription = function (account, subscription, cb) {
-			subscription.dateExpires = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
+			subscription.dateExpires = req.body.dateExpires
+				? req.body.dateExpires
+				: req.body.billing === 'year'
+					? helpers.dateIn1Year()
+					: helpers.dateIn1Month();
 			account.subscriptions.push(helpers.toJsonIfNeeded(subscription));
 			account.save(cb);
 		};
@@ -93,6 +101,7 @@ const subscriptions = {
 		async.waterfall([
 				getAccountThen.bind(this, req, res),
 				stopOtherSubscriptions,
+				createSubscriptionObject,
 				createPaymentProviderSubscription,
 				getPlanId,
 				addSubscription,

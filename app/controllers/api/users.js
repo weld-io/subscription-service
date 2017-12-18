@@ -17,9 +17,10 @@ const Account = require('mongoose').model('Account');
 const identifyingKey = 'reference';
 
 const addPlans = function (req, res, next) {
-	req.crudify.user.getSubscriptionPlans((err, subscriptionPlans) => {
+	req.crudify.user.getSubscriptionPlans({ includeAllSubscriptions: _.get(req, 'query.includeAllSubscriptions') }, (err, { subscriptions, subscriptionsWithPlan }) => {
 		req.crudify.result = helpers.toJsonIfNeeded(req.crudify.result);
-		req.crudify.result.plans = _(subscriptionPlans).map(subscriptionPlan => subscriptionPlan.plan.reference);
+		req.crudify.result.account.subscriptions = subscriptions;
+		req.crudify.result.plans = _(subscriptionsWithPlan).map(subscriptionPlan => subscriptionPlan.plan.reference);
 		next();
 	})
 };

@@ -31,7 +31,7 @@ const Subscription = new Schema({
 	plan: { type: Schema.Types.ObjectId, ref: 'Plan', required: true },
 	billing: { type: String, default: 'month' },
 	dateCreated: { type: Date, default: Date.now },
-	dateExpires: { type: Date, default: helpers.dateIn1Month },
+	dateExpires: { type: Date },
 	dateStopped: { type: Date },
 	discountCode: { type: String },
 	metadata: {}, // for Stripe IDs etc
@@ -50,7 +50,7 @@ const AccountSchema = new Schema({
 {
 	toJSON: {
 		transform: function (doc, ret, options) {
-			showOnlyActiveSubscriptions(ret);
+			//showOnlyActiveSubscriptions(ret); // this is handled in User.getSubscriptionPlans now
 			helpers.stripIdsFromRet(doc, ret, options);
 		},
 	}

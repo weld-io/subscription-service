@@ -118,7 +118,7 @@ const deleteSubscription = function (subscription, callback) {
 		});
 	}
 	else {
-		callback();
+		if (callback) callback();
 	}
 };
 
