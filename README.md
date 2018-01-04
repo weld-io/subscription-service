@@ -23,8 +23,13 @@ or no JWT:
 
 	export DISABLE_JWT=true
 
+Optional:
 
-Just start with:
+	export STRIPE_SECRET_KEY=...
+	export WEBHOOK_RENEW_SUBSCRIPTION=...
+
+
+Then, just start with:
 
 	npm run dev # development
 
@@ -312,7 +317,9 @@ Built on Node.js, Express, MongoDB, [mongoose-crudify](https://github.com/ryo718
 	# Set up and configure app
 	heroku create MYAPPNAME
 	heroku addons:add mongolab
-	heroku config:set NODE_ENV=production
+	heroku config:set JWT_SECRET=...
+	heroku config:set STRIPE_SECRET_KEY=...
+	heroku config:set WEBHOOK_RENEW_SUBSCRIPTION=...
 
 
 ## Payment providers (including Stripe)
