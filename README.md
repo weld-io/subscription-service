@@ -45,34 +45,6 @@ Server will default to **http://localhost:3034**
 	npm test
 
 
-## Development Plan
-
-- [x] Create a User and Account in one request
-- [x] Subscriptions controller (by Account or User)
-- [x] Stop Subscriptions by User (not Account)
-- [x] Subscriptions should be deactivated (with timestamp), not deleted
-- [x] See a User’s current Services
-- [x] Authentication with JWT
-- [x] VAT support: see prices with(out) VAT
-- [x] Show plans by tag
-- [x] Show plan (and activePlan?) on User
-- [x] Stripe integration
-- [ ] Check that it's the authenticated User that operates
-- [ ] Multiple subscriptions, how to handle?
-- [ ] Tests
-
-v2:
-
-- [ ] Transaction logging
-- [ ] Find-or-Create User (by reference)
-- [ ] Discount coupons - merge/use [coupon-service](https://github.com/weld-io/coupon-service)
-- [ ] Consumables controller - counting, routes
-- [ ] See a User's current Consumables
-- [ ] Set Subscription.dateExpires by "90d" or similar (`ms` NPM)
-- [ ] Validations
-- [ ] VAT based on location/company
-
-
 ## Entities
 
 For B2C apps, one Account has only one User.
