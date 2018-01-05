@@ -1,6 +1,7 @@
 const path = require('path');
 const rootPath = path.normalize(__dirname + '/..');
 const env = process.env.NODE_ENV || 'development';
+console.log(`Environment is "${env}"`);
 
 const config = {
 
@@ -20,7 +21,7 @@ const config = {
 			name: 'subscription-service'
 		},
 		port: 3000,
-		db: 'mongodb://localhost/subscription-service-test'
+		db: process.env.MONGODB_URI || 'mongodb://localhost/subscription-service-test'
 		
 	},
 

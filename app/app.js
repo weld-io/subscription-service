@@ -4,7 +4,9 @@ const mongoose = require('mongoose');
 
 const config = require('./config/config');
 
-mongoose.connect(config.db);
+mongoose.Promise = Promise;
+console.log(`Connecting to database: ${config.db}`);
+mongoose.connect(config.db, { useMongoClient: true });
 var db = mongoose.connection;
 db.on('error', function () {
 	throw new Error('unable to connect to database at ' + config.db);

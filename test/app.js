@@ -1,23 +1,26 @@
 'use strict';
 
+const _ = require('lodash');
 const test = require('tape');
 const request = require('supertest');
 const async = require('async');
+
+const TEST_PLAN = 'domain';
 
 test('Test the entire API', function (assert) {
 	const app = require('../app/app');
 	async.waterfall([
 			// Accounts
 			(cb) => request(app).get('/api/accounts').expect(200, cb),
-			(results, cb) => { assert.ok(results.body.length, 'Returned accounts list'); cb(null, results); },
-			(results, cb) => { assert.ok(results.body[0].reference, 'account #0 has reference'); cb(null, results); },
+			(results, cb) => { assert.ok(_.get(results, 'body.length'), 'Returned accounts list'); cb(null, results); },
+			(results, cb) => { assert.ok(_.get(results, 'body[0].reference'), 'account #0 has reference'); cb(null, results); },
 
 			// Plans
 			(results, cb) => request(app).get('/api/plans').expect(200, cb),
-			(results, cb) => { assert.ok(results.body[0].reference, 'plan #0 has reference'); cb(null, results); },
+			(results, cb) => { assert.ok(_.get(results, 'body[0].reference'), 'plan #0 has reference'); cb(null, results); },
 			// get
-			(results, cb) => request(app).get('/api/plans/single_website').expect(200, cb),
-			(results, cb) => { assert.equal(typeof(results.body.services), 'object', 'plan’s services are objects'); cb(null, results); },
+			(results, cb) => request(app).get(`/api/plans/${TEST_PLAN}`).expect(200, cb),
+			(results, cb) => { assert.equal(typeof(_.get(results, 'body.services')), 'object', 'plan’s services are objects'); cb(null, results); },
 
 			// Services
 			(results, cb) => request(app).get('/api/services').expect(200, cb),
@@ -26,6 +29,7 @@ test('Test the entire API', function (assert) {
 			(results, cb) => request(app).get('/api/users').expect(200, cb),
 		],
 		(err, results) => {
+			console.log(`DONE!`, {err});
 			app.closeDatabase();
 			assert.end();
 		}
