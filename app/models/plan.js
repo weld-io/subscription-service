@@ -21,7 +21,7 @@ const PlanSchema = new Schema({
 	reference: { type: String, unique: true, required: true, sparse: true },
 	name: { type: String },
 	description: { type: String },
-	features: [String],
+	featureDescriptions: [String],
 	tags: [String],
 	position: Number, // index in lists, lower comes first
 	dateCreated: { type: Date, default: Date.now },

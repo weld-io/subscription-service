@@ -72,11 +72,12 @@ For B2B apps, there can be multiple Users on each Account.
 	- name
 	- reference (slug)
 	- description
-	- features (string array)
+	- featureDescriptions (string array)
 	- tags (string array)
 	- position (order in a list)
 	- isAvailable: true/false
-	- services (Array)
+	- allowMultiple: true/false (false = disable all other subscriptions unless they are allowMultiple=true)
+	- services (array of Services)
 	- price
 		- month
 		- year
@@ -91,12 +92,12 @@ For B2B apps, there can be multiple Users on each Account.
 	- dateExpires
 	- metadata (free form data)
 		- stripeSubscription
-- **Services** (e.g. access to something, included in Plan)
+- **Services** (e.g. access to a feature, included in Plan)
 	- name
 	- reference (slug)
 	- description
 	- metadata (free form data)
-- **Consumables** (e.g. projects, users - limited by Plan)
+- **Consumables** (e.g. projects, users - limited by Plan, consumed by Users not Accounts)
 
 
 ## Environment variables
