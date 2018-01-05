@@ -57,9 +57,9 @@ UserSchema.methods.getSubscriptionPlans = function (options, callback) {
 };
 
 UserSchema.methods.getServices = function (callback) {
-	const planReferences = _(this.account.subscriptions).filter(helpers.isSubscriptionActive).map('plan').map('reference').value();
-	Plan.find({ 'reference': { $in: planReferences } }).populate('services').exec((err, plans) => {
-		const allServices = _(plans).map('services').flatten().uniq().arrayToCollection();
+	const planIds = _.chain(this.account.subscriptions).filter(helpers.isSubscriptionActive).map('plan').value();
+	Plan.find({ '_id': { $in: planIds } }).populate('services').exec((err, plans) => {
+		const allServices = _(plans).map('services').flatten().uniq().arrayToCollection().value();
 		callback(null, allServices);
 	});
 };

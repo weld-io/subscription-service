@@ -114,7 +114,6 @@ module.exports.sendRequestResponse = function (req, res, next) {
 module.exports.checkIfAuthorizedUser = function (reqPropertyName='params.reference', req, res, next) {
 	const userReference = _.get(req, reqPropertyName);
 	const jwtUserId = _.get(req, 'user.d.uid');
-	console.log(`checkIfAuthorizedUser:`, {jwtUserId, userReference}, arguments.length);
 	if (userReference === jwtUserId || process.env.DISABLE_JWT === 'true') {
 		next();
 	}
