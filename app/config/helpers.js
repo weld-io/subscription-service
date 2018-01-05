@@ -111,6 +111,18 @@ module.exports.sendRequestResponse = function (req, res, next) {
 	module.exports.sendResponse.call(res, null, req.crudify.result);
 };
 
+module.exports.checkIfAuthorizedUser = function (reqPropertyName='params.reference', req, res, next) {
+	const userReference = _.get(req, reqPropertyName);
+	const jwtUserId = _.get(req, 'user.d.uid');
+	console.log(`checkIfAuthorizedUser:`, {jwtUserId, userReference}, arguments.length);
+	if (userReference === jwtUserId || process.env.DISABLE_JWT === 'true') {
+		next();
+	}
+	else {
+		res.status(401).json({ message: 'Only the authorized user can access this' });
+	};
+};
+
 module.exports.stripIdsFromRet = function (doc, ret, options) {
 	delete ret._id;
 	delete ret.__v;

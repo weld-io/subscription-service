@@ -43,6 +43,7 @@ module.exports = function (app, config) {
 			Model: User,
 			identifyingKey: identifyingKey,
 			beforeActions: [
+				{ middlewares: [helpers.checkIfAuthorizedUser.bind(this, undefined)], except: ['create'] }, // Apply to all CRUD operations except Create
 				{ middlewares: [helpers.changeReferenceToId.bind(this, { modelName:'Account', parentCollection:'account', childIdentifier:'reference' })], only: ['create', 'update'] },
 				{ middlewares: [helpers.populateProperties.bind(this, { modelName:'user', propertyName:'account' })], only: ['read'] },
 			],

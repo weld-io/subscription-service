@@ -113,7 +113,7 @@ const deleteSubscription = function (subscription, callback) {
 	const stripeSubscriptionId = getStripeSubscriptionID(subscription);
 	if (stripeSubscriptionId) {
 		stripe.subscriptions.del(stripeSubscriptionId, (stripeErr, stripeSubscription) => {
-			if (stripeErr) console.log('deleteSubscription', stripeErr);
+			if (stripeErr) console.log(`deleteSubscription: ${stripeErr}`);
 			if (callback) callback(stripeErr, stripeSubscription);
 		});
 	}

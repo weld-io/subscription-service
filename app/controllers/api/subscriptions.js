@@ -68,7 +68,7 @@ const subscriptions = {
 		};
 
 		const createPaymentProviderSubscription = function (user, account, subscription, cb) {
-			// Use ?ignorePaymentProvider=true to avoid Stripe subscriptions being created
+			// Use ?ignorePaymentProvider=true on URL to avoid Stripe subscriptions being created, e.g. for migration purposes
 			_.has(req, 'query.ignorePaymentProvider')
 				? cb(null, user, account, subscription)
 				: paymentProvider.createSubscription(
@@ -84,7 +84,7 @@ const subscriptions = {
 			helpers.changeReferenceToId({ modelName:'Plan', parentCollection:'plan', childIdentifier:'reference' }, { body: subscription }, res, (err, plan) => cb(err, account, subscription));
 		};
 
-		const addSubscription = function (account, subscription, cb) {
+		const addSubscriptionToUser = function (account, subscription, cb) {
 			subscription.dateExpires = req.body.dateExpires
 				? req.body.dateExpires
 				: req.body.billing === 'year'
@@ -104,7 +104,7 @@ const subscriptions = {
 				createSubscriptionObject,
 				createPaymentProviderSubscription,
 				getPlanId,
-				addSubscription,
+				addSubscriptionToUser,
 			],
 			sendResponse
 		);
@@ -225,12 +225,12 @@ module.exports = function (app, config) {
 	router.delete('/api/accounts/:accountReference/subscriptions', subscriptions.delete);
 
 	// CRUD routes: User
-	router.get('/api/users/:userReference/subscriptions', subscriptions.list);
-	router.get('/api/users/:userReference/subscriptions/:subscriptionId', subscriptions.read);
-	router.post('/api/users/:userReference/subscriptions', subscriptions.create);
-	router.put('/api/users/:userReference/subscriptions/:subscriptionId', subscriptions.update);
-	router.delete('/api/users/:userReference/subscriptions/:subscriptionId', subscriptions.delete);
-	router.delete('/api/users/:userReference/subscriptions', subscriptions.delete);
+	router.get('/api/users/:userReference/subscriptions', helpers.checkIfAuthorizedUser.bind(this, 'params.userReference'), subscriptions.list);
+	router.get('/api/users/:userReference/subscriptions/:subscriptionId', helpers.checkIfAuthorizedUser.bind(this, 'params.userReference'), subscriptions.read);
+	router.post('/api/users/:userReference/subscriptions', helpers.checkIfAuthorizedUser.bind(this, 'params.userReference'), subscriptions.create);
+	router.put('/api/users/:userReference/subscriptions/:subscriptionId', helpers.checkIfAuthorizedUser.bind(this, 'params.userReference'), subscriptions.update);
+	router.delete('/api/users/:userReference/subscriptions/:subscriptionId', helpers.checkIfAuthorizedUser.bind(this, 'params.userReference'), subscriptions.delete);
+	router.delete('/api/users/:userReference/subscriptions', helpers.checkIfAuthorizedUser.bind(this, 'params.userReference'), subscriptions.delete);
 
 	// Receive webhook from e.g. Stripe
 	router.post('/api/subscriptions/renew', subscriptions.renew);

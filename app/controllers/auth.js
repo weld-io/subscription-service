@@ -10,7 +10,7 @@ module.exports = function (app, config) {
 	// Sets the JWT properties req.user.d.uid and req.user.d.role
 	const jwt = require('express-jwt');
 
-	if (_.isEmpty(process.env.DISABLE_JWT)) {
+	if (process.env.DISABLE_JWT !== 'true') {
 		app.use(
 			jwt({ secret: process.env.JWT_SECRET })
 				.unless({ path: [
