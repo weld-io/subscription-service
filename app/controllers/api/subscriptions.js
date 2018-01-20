@@ -81,7 +81,7 @@ const subscriptions = {
 		};
 
 		const getPlanId = function (user, account, subscription, cb) {
-			helpers.changeReferenceToId({ modelName:'Plan', parentCollection:'plan', childIdentifier:'reference' }, { body: subscription }, res, (err, plan) => cb(err, account, subscription));
+			helpers.changeReferenceToId({ modelName:'Plan', parentProperty:'plan', childIdentifier:'reference' }, { body: subscription }, res, (err, plan) => cb(err, account, subscription));
 		};
 
 		const addSubscriptionToUser = function (account, subscription, cb) {

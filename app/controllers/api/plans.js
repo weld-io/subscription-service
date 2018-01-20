@@ -106,7 +106,7 @@ module.exports = function (app, config) {
 			Model: Plan,
 			identifyingKey: identifyingKey,
 			beforeActions: [
-				{ middlewares: [helpers.changeReferenceToId.bind(this, { modelName:'Service', parentCollection:'services', childIdentifier:'reference' })], only: ['create'] },
+				{ middlewares: [helpers.changeReferenceToId.bind(this, { modelName:'Service', parentProperty:'services', childIdentifier:'reference' })], only: ['create'] },
 				{ middlewares: [helpers.populateProperties.bind(this, { modelName:'plan', propertyName:'services' })], only: ['read'] },
 			],
 			actions: {

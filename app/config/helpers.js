@@ -128,50 +128,50 @@ module.exports.stripIdsFromRet = function (doc, ret, options) {
 };
 
 // E.g. populate user.account with full Account structure
-// helpers.populateProperties.bind(this, 'user', 'account')
-module.exports.populateProperties = function ({modelName, propertyName, afterPopulate}, req, res, next) {
+// helpers.populateProperties.bind(this, { modelName:'plan', propertyName:'services' })
+module.exports.populateProperties = function ({ modelName, propertyName }, req, res, next) {
 	req.crudify[modelName].populate(propertyName, '-_id -__v', next);
 };
 
 // From reference to MongoDB _id (or multiple _id's)
 // E.g. user.account = 'my-company' --> user.account = '594e6f880ca23b37a4090fe0'
-// helpers.changeReferenceToId.bind(this, 'Service', 'reference', 'services')
-module.exports.changeReferenceToId = function ({modelName, parentCollection, childIdentifier}, req, res, next) {
+// helpers.changeReferenceToId.bind(this, { modelName:'Service', parentProperty:'services', childIdentifier:'reference' })
+module.exports.changeReferenceToId = function ({ modelName, parentProperty, childIdentifier }, req, res, next) {
 	const modelObj = require('mongoose').model(modelName);
 	let searchQuery = {};
 	let lookupAction = 'find';
-	const parentCollectionType = Object.prototype.toString.call(req.body[parentCollection]);
-	switch (parentCollectionType) {
+	const parentPropertyType = Object.prototype.toString.call(req.body[parentProperty]);
+	switch (parentPropertyType) {
 		case '[object String]': // One identifier
-			searchQuery[childIdentifier] = req.body[parentCollection];
+			searchQuery[childIdentifier] = req.body[parentProperty];
 			break;
 		case '[object Array]': // Array of identifiers
-			searchQuery[childIdentifier] = { $in: req.body[parentCollection] };
+			searchQuery[childIdentifier] = { $in: req.body[parentProperty] };
 			break;
 		case '[object Object]': // Create new child object, e.g. create User and
 			lookupAction = 'create';
-			searchQuery = req.body[parentCollection];
+			searchQuery = req.body[parentProperty];
 			break;
 	}
 	// Do the find or create, depending on lookupAction
-	modelObj[lookupAction](searchQuery, function (err, results) {
+	modelObj[lookupAction](searchQuery).lean().exec(function (err, results) {
 		if (!err) {
 			if (results) {
-				switch (parentCollectionType) {
+				switch (parentPropertyType) {
 					case '[object String]': // One identifier
-						req.body[parentCollection] = results[0]._id;
+						req.body[parentProperty] = results[0]._id;
 						break;
 					case '[object Array]': // Array of identifiers
-						req.body[parentCollection] = _.map(results, '_id');
+						req.body[parentProperty] = _.map(results, '_id');
 						break;
 					case '[object Object]': // Create new child object, e.g. create User and
-						req.body[parentCollection] = results._id;
+						req.body[parentProperty] = results._id;
 						break;
 				}
 			}
 			else {
 				res.status(404);
-				err = modelName + '(s) not found: ' + req.body[parentCollection];
+				err = modelName + '(s) not found: ' + req.body[parentProperty];
 			}
 		}
 		next(err, results);
