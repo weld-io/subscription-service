@@ -137,45 +137,48 @@ module.exports.populateProperties = function ({ modelName, propertyName }, req, 
 // E.g. user.account = 'my-company' --> user.account = '594e6f880ca23b37a4090fe0'
 // helpers.changeReferenceToId.bind(this, { modelName:'Service', parentProperty:'services', childIdentifier:'reference' })
 module.exports.changeReferenceToId = function ({ modelName, parentProperty, childIdentifier }, req, res, next) {
-	const modelObj = require('mongoose').model(modelName);
-	let searchQuery = {};
-	let lookupAction = 'find';
-	const parentPropertyType = Object.prototype.toString.call(req.body[parentProperty]);
-	switch (parentPropertyType) {
-		case '[object String]': // One identifier
-			searchQuery[childIdentifier] = req.body[parentProperty];
-			break;
-		case '[object Array]': // Array of identifiers
-			searchQuery[childIdentifier] = { $in: req.body[parentProperty] };
-			break;
-		case '[object Object]': // Create new child object, e.g. create User and
-			lookupAction = 'create';
-			searchQuery = req.body[parentProperty];
-			break;
-	}
-	// Do the find or create, depending on lookupAction
-	modelObj[lookupAction](searchQuery).lean().exec(function (err, results) {
-		if (!err) {
-			if (results) {
-				switch (parentPropertyType) {
-					case '[object String]': // One identifier
-						req.body[parentProperty] = results[0]._id;
-						break;
-					case '[object Array]': // Array of identifiers
-						req.body[parentProperty] = _.map(results, '_id');
-						break;
-					case '[object Object]': // Create new child object, e.g. create User and
-						req.body[parentProperty] = results._id;
-						break;
-				}
+	// Set up different behavior for different data types
+	const propertyTypes = {
+		// String: one identifier
+		'[object String]': {
+			lookupAction: 'find',
+			setSearchQuery: ({searchQuery, childIdentifier, req}) => searchQuery[childIdentifier] = req.body[parentProperty],
+			setResults: ({results, parentProperty, req}) => req.body[parentProperty] = results[0]._id,
+		},
+		// Array: array of identifiers
+		'[object Array]': {
+			lookupAction: 'find',
+			setSearchQuery: ({searchQuery, childIdentifier, req}) => searchQuery[childIdentifier] = { $in: req.body[parentProperty] },
+			setResults: ({results, parentProperty, req}) => req.body[parentProperty] = _.map(results, '_id'),
+		},
+		// Object: create new child object, e.g. create User and Account in one request
+		'[object Object]': {
+			lookupAction: 'create',
+			setSearchQuery: ({searchQuery, childIdentifier, req}) => searchQuery = req.body[parentProperty],
+			setResults: ({results, parentProperty, req}) => req.body[parentProperty] = results._id,
+		},
+	};
+	const parentType = Object.prototype.toString.call(req.body[parentProperty]);
+	if (propertyTypes[parentType]) {
+		// Make query
+		let searchQuery = {};
+		propertyTypes[parentType].setSearchQuery({searchQuery, childIdentifier, req});
+		// Do the find or create, depending on lookupAction
+		const modelObj = require('mongoose').model(modelName);
+		modelObj[propertyTypes[parentType].lookupAction](searchQuery).lean().exec(function (err, results) {
+			if (!err && results) {
+				propertyTypes[parentType].setResults({results, parentProperty, req});
 			}
-			else {
+			else if (!err) {
 				res.status(404);
 				err = modelName + '(s) not found: ' + req.body[parentProperty];
 			}
-		}
-		next(err, results);
-	});
+			next(err, results);
+		});
+	}
+	else {
+		next(`Property '${parentProperty}' not found or unknown type (${parentType})`);
+	}
 };
 
 module.exports.dateInDays = days => new Date((new Date()).getTime() + days*24*60*60*1000).getTime();
