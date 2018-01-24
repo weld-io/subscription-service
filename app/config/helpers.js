@@ -1,6 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
+const async = require('async');
 const mongoose = require('mongoose');
 
 // Specify v2: Get all properties for an object (console.dir):
@@ -80,6 +81,7 @@ _.mixin({ 'arrayToCollection': module.exports.arrayToCollection });
 // applyToAll(func, obj1) or applyToAll(func, [obj1, obj2, ...])
 module.exports.applyToAll = (func, objectOrArray) => objectOrArray.constructor === Array ? _.map(objectOrArray, func) : func(objectOrArray);
 _.mixin({ 'applyToAll': module.exports.applyToAll });
+module.exports.applyToAllAsync = (func, objectOrArray, cbWhenDone) => async.eachOfSeries((objectOrArray.constructor === Array ? objectOrArray : [objectOrArray]), func, cbWhenDone);
 
 // Simple JSON response, usage e.g.
 // 1. helpers.sendResponse.bind(res) - err, results will be appended to end
@@ -164,7 +166,7 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
 		let searchQuery = {};
 		propertyTypes[parentType].setSearchQuery({searchQuery, childIdentifier, req});
 		// Do the find or create, depending on lookupAction
-		const modelObj = require('mongoose').model(modelName);
+		const modelObj = mongoose.model(modelName);
 		modelObj[propertyTypes[parentType].lookupAction](searchQuery).lean().exec(function (err, results) {
 			if (!err && results) {
 				propertyTypes[parentType].setResults({results, parentProperty, req});
@@ -180,6 +182,24 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
 		next(`Property '${parentProperty}' not found or unknown type (${parentType})`);
 	}
 };
+
+// Object(s) has only an ID, change to sub-document
+module.exports.getChildObjects = function (objects, propertyName, modelName, callback) {
+	let newObjects = [];
+	module.exports.applyToAllAsync(
+		(obj, key, cb) => {
+			mongoose.model(modelName).findById(obj[propertyName]).exec((err, childObj) => {
+				newObjects[key] = childObj;
+				cb(err);
+			});
+		},
+		objects,
+		(err, items) => {
+			console.log('app', err, newObjects);
+			callback(err, newObjects);
+		}
+	);
+}
 
 module.exports.dateInDays = days => new Date((new Date()).getTime() + days*24*60*60*1000).getTime();
 module.exports.dateIn1Month = () => module.exports.dateInDays(31);

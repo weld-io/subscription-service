@@ -107,7 +107,6 @@ For B2B apps, there can be multiple Users on each Account.
 * `PAYMENT_PROVIDER`: defaults to 'stripe'. Add new Payment Providers in folder `/app/paymentProviders`.
 * `STRIPE_SECRET_KEY`: secret key from [Stripe dashboard](https://dashboard.stripe.com/account/apikeys).
 * `VAT_PERCENT`: defaults to "20" (%), as in if the price incl. VAT is $10, VAT is $2.
-* `MULTIPLE_SUBSCRIPTIONS`: whether to allow multiple active subscriptions. Defaults to "no".
 * `WEBHOOK_RENEW_SUBSCRIPTION`: a complete URL that will receive a POST request whenever a subscription is renewed.
 
 

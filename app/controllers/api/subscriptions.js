@@ -46,65 +46,111 @@ const subscriptions = {
 
 	create: function (req, res, next) {
 
-		// TODO: update to use Plan.allowMultiple instead (e.g. multiple domains)
-		const stopOtherSubscriptions = (account, cb) => {
-
-			const stopOneSubscription = sub => {
-				sub.dateStopped = Date.now();
-				paymentProvider.deleteSubscription(sub);
-			};
-
-			if (process.env.MULTIPLE_SUBSCRIPTIONS !== 'yes') {
-				_.forEach(account.subscriptions, stopOneSubscription);
-			};
-
-			cb(null, account);
-		};
-
 		const createSubscriptionObject = function (account, cb) {
-			const subscription = _.merge({}, req.body);
+			const newSubscription = _.merge({}, req.body);
 			const user = { reference: req.params.userReference };
-			cb(null, user, account, subscription);
+			cb(null, {user, account, newSubscription});
 		};
 
-		const createPaymentProviderSubscription = function (user, account, subscription, cb) {
+		const getPlanForNewSubscription = function ({user, account, newSubscription}, cb) {
+			const subscriptionCopy = _.cloneDeep(newSubscription);
+			helpers.changeReferenceToId({ modelName:'Plan', parentProperty:'plan', childIdentifier:'reference' }, { body: subscriptionCopy }, res, (err, plans) => cb(err, {user, account, newSubscription, newPlan: plans[0]}));
+		};
+
+		const getPlansForOldSubscriptions = function ({user, account, newSubscription, newPlan}, cb) {
+			helpers.getChildObjects(account.subscriptions, 'plan', 'Plan', (err, oldPlans) => {
+				cb(err, {user, account, newSubscription, newPlan, oldPlans})
+			});
+		};
+
+		const findCurrentActiveSubscriptions = ({user, account, newSubscription, newPlan, oldPlans}, cb) => {
+
+			const isSubscriptionWithoutAllowMultiple = sub => {
+				const planForSubscription = _.find(oldPlans, plan => plan._id.toString() === sub.plan.toString());
+				return planForSubscription && !planForSubscription.allowMultiple;
+			};
+			const getActiveSubscriptionsWithoutAllowMultiple = () => _.chain(account.subscriptions).filter(helpers.isSubscriptionActive).filter(isSubscriptionWithoutAllowMultiple).value();
+
+			let subscriptionToUpdate;
+			if (!newPlan.allowMultiple) {
+				// Find old active plan with allowMultiple=false, if any
+				const allSubscriptionsToUpdate = getActiveSubscriptionsWithoutAllowMultiple();
+				subscriptionToUpdate = allSubscriptionsToUpdate[0];
+				// TODO: how to handle the rest of allSubscriptionsToUpdate?
+			}
+
+			const { subscriptions } = account;
+
+			cb(null, {user, account, newSubscription, subscriptionToUpdate, newPlan, oldPlans});
+		};
+
+		const createPaymentProviderSubscription = function ({user, account, newSubscription, subscriptionToUpdate, newPlan, oldPlans}, cb) {
 			// Use ?ignorePaymentProvider=true on URL to avoid Stripe subscriptions being created, e.g. for migration purposes
-			_.has(req, 'query.ignorePaymentProvider')
-				? cb(null, user, account, subscription)
-				: paymentProvider.createSubscription(
-						/* user */ user,
-						/* account */ account,
-						/* subscription */ subscription,
-						/* payment */ { token: req.body.token, /* taxPercent: */ },
-						cb
+			if (_.has(req, 'query.ignorePaymentProvider')) {
+				cb(null, {user, account, newSubscription});
+			}
+			else {
+				// If existing subscription
+				if (subscriptionToUpdate) {
+					// Update existing
+					subscriptionToUpdate.plan = newSubscription.plan;
+					subscriptionToUpdate.billing = newSubscription.billing;
+
+					const updateSubscriptionOnAccount = function ({account, subscriptionToUpdate, newPlan}, cbk) {
+						const defaultExpiryDate = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
+						subscriptionToUpdate.dateExpires = req.body.dateExpires || defaultExpiryDate;
+						subscriptionToUpdate.plan = newPlan._id;
+						account.save(cbk);
+					};
+
+					paymentProvider.updateSubscription(
+						{
+							user,
+							account,
+							subscription: subscriptionToUpdate,
+							payment: { token: req.body.token, /* taxPercent: */ },
+						},
+						(err, result) => {
+							err ? cb(err) : updateSubscriptionOnAccount({account, subscriptionToUpdate, newPlan}, (saveErr, savedAccount) => cb(saveErr, {user, account: savedAccount, newSubscription: subscriptionToUpdate}));
+						}
 					);
+				}
+				// If NO existing subscription, create new
+				else {
+					const addSubscriptionToAccount = function ({user, account, subscription}, cbk) {
+						const defaultExpiryDate = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
+						subscription.dateExpires = req.body.dateExpires || defaultExpiryDate;
+						account.subscriptions.push(helpers.toJsonIfNeeded(subscription));
+						account.save(cbk);
+					};
+
+					// Create new
+					paymentProvider.createSubscription(
+						{
+							user,
+							account,
+							subscription: newSubscription,
+							payment: { token: req.body.token, /* taxPercent: */ },
+						},
+						(err, result) => {
+							err ? cb(err) : addSubscriptionToAccount(result, (saveErr, savedAccount) => cb(saveErr, {user, account: savedAccount, newSubscription: result.subscription}));
+						}
+					);
+				}
+			}
 		};
 
-		const getPlanId = function (user, account, subscription, cb) {
-			helpers.changeReferenceToId({ modelName:'Plan', parentProperty:'plan', childIdentifier:'reference' }, { body: subscription }, res, (err, plan) => cb(err, account, subscription));
-		};
-
-		const addSubscriptionToUser = function (account, subscription, cb) {
-			subscription.dateExpires = req.body.dateExpires
-				? req.body.dateExpires
-				: req.body.billing === 'year'
-					? helpers.dateIn1Year()
-					: helpers.dateIn1Month();
-			account.subscriptions.push(helpers.toJsonIfNeeded(subscription));
-			account.save(cb);
-		};
-
-		const sendResponse = function (err, account) {
+		const sendResponse = function (err, {user, account, newSubscription}) {
 			helpers.sendResponse.call(res, err, _.get(account, 'subscriptions'));
 		};
 
 		async.waterfall([
 				getAccountThen.bind(this, req, res),
-				stopOtherSubscriptions,
 				createSubscriptionObject,
+				getPlanForNewSubscription,
+				getPlansForOldSubscriptions,
+				findCurrentActiveSubscriptions,
 				createPaymentProviderSubscription,
-				getPlanId,
-				addSubscriptionToUser,
 			],
 			sendResponse
 		);
@@ -117,10 +163,12 @@ const subscriptions = {
 
 		const updatePaymentProviderSubscription = function (account, cb) {
 			paymentProvider.updateSubscription(
-				/* user */ { reference: req.params.userReference },
-				/* account */ account,
-				/* subscription */ { plan: req.body.plan, billing: req.body.billing },
-				/* payment */ { token: req.body.token, /* taxPercent: */ },
+				{
+					user: { reference: req.params.userReference },
+					account,
+					subscription: { plan: req.body.plan, billing: req.body.billing },
+					payment: { token: req.body.token, /* taxPercent: */ },
+				},
 				cb
 			);
 		};

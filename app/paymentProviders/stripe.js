@@ -18,9 +18,8 @@ const Account = require('mongoose').model('Account');
 
 const getStripeCustomerID = account => _.get(account, 'metadata.stripeCustomer');
 const getStripeSubscriptionID = sub => _.get(sub, 'metadata.stripeSubscription');
-const getExistingStripeSubscription = subscriptions => _(subscriptions).filter(helpers.isSubscriptionActive).find(getStripeSubscriptionID);
 
-const createStripeOptions = (user, account, subscription, payment) => {
+const createStripeOptions = ({user, account, subscription, payment}) => {
 	// e.g. "enterprise_small_monthly"
 	// TODO: Fix ugly hack with isHexString to determine if it's a new plan reference, or a plan._id
 	const stripePlanName = helpers.isHexString(subscription.plan) ? undefined : `${subscription.plan}_${subscription.billing}`;
@@ -33,9 +32,9 @@ const createStripeOptions = (user, account, subscription, payment) => {
 	};
 };
 
-const createStripeUserAndSubscription = function (user, account, subscription, payment, callback) {
+const createStripeUserAndSubscription = function ({user, account, subscription, payment}, callback) {
 
-	let stripeCustomerObj = createStripeOptions(user, account, subscription, payment);
+	let stripeCustomerObj = createStripeOptions({user, account, subscription, payment});
 	// Extra options for Create
 	_.merge(stripeCustomerObj, {
 		description: account.reference,
@@ -54,17 +53,16 @@ const createStripeUserAndSubscription = function (user, account, subscription, p
 			else {
 				_.set(account, 'metadata.stripeCustomer', _.get(stripeCustomer, 'id'));
 				_.set(subscription, 'metadata.stripeSubscription', _.get(stripeCustomer, 'subscriptions.data.0.id'));
-				callback(null, user, account, subscription);
+				callback(null, {user, account, subscription});
 			}
 		}
 	);
 };
 
-const updateStripeSubscription = function (user, account, subscription, payment, callback) {
+const createStripeSubscription = function ({user, account, subscription, payment}, callback) {
 
 	const stripeCustomerId = getStripeCustomerID(account);
-	const stripeSubscriptionId = getStripeSubscriptionID(subscription);
-	const stripeSubscriptionObj = createStripeOptions(user, account, subscription, payment);
+	const stripeSubscriptionObj = createStripeOptions({user, account, subscription, payment});
 
 	const whenDone = function (stripeErr, stripeSubscription) {
 		if (stripeErr) {
@@ -72,7 +70,28 @@ const updateStripeSubscription = function (user, account, subscription, payment,
 		}
 		else {
 			_.set(subscription, 'metadata.stripeSubscription', _.get(stripeSubscription, 'id'));
-			callback(null, user, account, subscription);
+			callback(null, {user, account, subscription});
+		}
+	};
+
+	// Call Stripe API
+	stripe.customers.createSubscription(stripeCustomerId, stripeSubscriptionObj, whenDone);
+
+};
+
+const updateStripeSubscription = function ({user, account, subscription, payment}, callback) {
+
+	const stripeCustomerId = getStripeCustomerID(account);
+	const stripeSubscriptionId = getStripeSubscriptionID(subscription);
+	const stripeSubscriptionObj = createStripeOptions({user, account, subscription, payment});
+
+	const whenDone = function (stripeErr, stripeSubscription) {
+		if (stripeErr) {
+			callback(stripeErr);
+		}
+		else {
+			_.set(subscription, 'metadata.stripeSubscription', _.get(stripeSubscription, 'id'));
+			callback(null, {user, account, subscription});
 		}
 	};
 
@@ -88,24 +107,14 @@ const updateStripeSubscription = function (user, account, subscription, payment,
 // API methods
 
 // CREATE
-const createSubscription = function (user, account, subscription, payment, callback) {
-
-	const existingSubscription = getExistingStripeSubscription(account.subscriptions);
-	const combinedSubscription = _.merge({}, existingSubscription, subscription);
-
+const createSubscription = function ({user, account, subscription, payment}, callback) {
 	// NOTE: _.has() doesn't work on Mongoose objects, but _.get() does.
 	if (_.get(account, 'metadata.stripeCustomer')) {
-		updateStripeSubscription(user, account, combinedSubscription, payment, callback);
+		createStripeSubscription({user, account, subscription, payment}, callback);
 	}
 	else {
-		createStripeUserAndSubscription(user, account, combinedSubscription, payment, callback);
+		createStripeUserAndSubscription({user, account, subscription, payment}, callback);
 	}
-};
-
-// UPDATE
-const updateSubscription = function (user, account, subscription, payment, callback) {
-	// Yes, it's the same
-	createSubscription(user, account, subscription, payment, callback);
 };
 
 // DELETE
@@ -114,7 +123,7 @@ const deleteSubscription = function (subscription, callback) {
 	if (stripeSubscriptionId) {
 		stripe.subscriptions.del(stripeSubscriptionId, (stripeErr, stripeSubscription) => {
 			if (stripeErr) console.log(`deleteSubscription: ${stripeErr}`);
-			if (callback) callback(stripeErr, stripeSubscription);
+			if (callback) callback(stripeErr, { subscription: stripeSubscription });
 		});
 	}
 	else {
@@ -155,15 +164,17 @@ const receiveRenewSubscription = function (req, callback) {
 
 module.exports = {
 
+	// All methods should have signature `function({ payload1, ... }, callback)`
+	// and callbacks have signature `callback(error, ({ payload1, ... })`
+
 	// CRUD operations
 	createSubscription: createSubscription,
-	updateSubscription: updateSubscription,
+	updateSubscription: updateStripeSubscription,
 	deleteSubscription: deleteSubscription,
 
-	// https://stripe.com/docs/api#invoice_object
-
 	// receiveRenewSubscription(req, callback)
-	// 	callback(err, { account, subscriptions, interval, intervalCount })
+	// 	 callback(err, { account, subscriptions, interval, intervalCount })
+	//   Payload in req: https://stripe.com/docs/api#invoice_object
 	receiveRenewSubscription: receiveRenewSubscription,
 
 };
