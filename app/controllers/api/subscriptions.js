@@ -93,21 +93,20 @@ const subscriptions = {
 				// If existing subscription
 				if (subscriptionToUpdate) {
 					// Update existing
-					subscriptionToUpdate.plan = newSubscription.plan;
-					subscriptionToUpdate.billing = newSubscription.billing;
+					const updatedSubscription = _.merge({}, subscriptionToUpdate, _.pick(newSubscription, ['plan', 'billing']));
 
-					const updateSubscriptionOnAccount = function ({account, subscriptionToUpdate, newPlan}, cbk) {
+					const updateSubscriptionOnAccount = function ({account, subscriptionToUpdate, newPlan}, cbAfterSave) {
 						const defaultExpiryDate = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
 						subscriptionToUpdate.dateExpires = req.body.dateExpires || defaultExpiryDate;
 						subscriptionToUpdate.plan = newPlan._id;
-						account.save(cbk);
+						account.save(cbAfterSave);
 					};
 
 					paymentProvider.updateSubscription(
 						{
 							user,
 							account,
-							subscription: subscriptionToUpdate,
+							subscription: updatedSubscription,
 							payment: { token: req.body.token, /* taxPercent: */ },
 						},
 						(err, result) => {
@@ -117,11 +116,12 @@ const subscriptions = {
 				}
 				// If NO existing subscription, create new
 				else {
-					const addSubscriptionToAccount = function ({user, account, subscription}, cbk) {
+					const addSubscriptionToAccount = function ({user, account, subscription}, cbAfterSave) {
 						const defaultExpiryDate = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
 						subscription.dateExpires = req.body.dateExpires || defaultExpiryDate;
+						subscription.plan = newPlan._id;
 						account.subscriptions.push(helpers.toJsonIfNeeded(subscription));
-						account.save(cbk);
+						account.save(cbAfterSave);
 					};
 
 					// Create new
@@ -195,18 +195,31 @@ const subscriptions = {
 
 	},
 
+	// Stop one or all subscriptions
 	delete: function (req, res, next) {
 		getAccountThen(req, res, (err, account) => {
 			let subsStopped = 0;
-			_.forEach(account.subscriptions, sub => {
-				if (req.params.subscriptionId === undefined // stop all
-					|| sub._id.toString() === req.params.subscriptionId) // stop one
-				{
-					sub.dateStopped = Date.now();
-					subsStopped++;
+			async.eachSeries(
+				account.subscriptions,
+				(sub, cb) => {
+					if ((req.params.subscriptionId === undefined // Stop all
+						|| req.params.subscriptionId === sub._id.toString()) // Stop one
+						&& !sub.dateStopped // Always: check that not already stopped
+					)
+					{
+						sub.dateStopped = Date.now();
+						subsStopped++;
+						paymentProvider.deleteSubscription(sub, cb);
+					}
+					else {
+						cb();
+					}
+				},
+				// When done
+				(err) => {
+					account.save((err, results) => helpers.sendResponse.call(res, err, { message: `Stopped ${subsStopped} subscriptions` }));
 				}
-			});
-			account.save((err, results) => helpers.sendResponse.call(res, err, { message: `Stopped ${subsStopped} subscriptions` }));
+			);
 		});
 	},
 

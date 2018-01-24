@@ -167,7 +167,7 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
 		propertyTypes[parentType].setSearchQuery({searchQuery, childIdentifier, req});
 		// Do the find or create, depending on lookupAction
 		const modelObj = mongoose.model(modelName);
-		modelObj[propertyTypes[parentType].lookupAction](searchQuery).lean().exec(function (err, results) {
+		const cbAfterFindOrCreate = function (err, results) {
 			if (!err && results) {
 				propertyTypes[parentType].setResults({results, parentProperty, req});
 			}
@@ -176,7 +176,10 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
 				err = modelName + '(s) not found: ' + req.body[parentProperty];
 			}
 			next(err, results);
-		});
+		};
+		propertyTypes[parentType].lookupAction === 'find'
+			? modelObj.find(searchQuery).lean().exec(cbAfterFindOrCreate)
+			: modelObj.create(searchQuery, cbAfterFindOrCreate)
 	}
 	else {
 		next(`Property '${parentProperty}' not found or unknown type (${parentType})`);
@@ -195,7 +198,6 @@ module.exports.getChildObjects = function (objects, propertyName, modelName, cal
 		},
 		objects,
 		(err, items) => {
-			console.log('app', err, newObjects);
 			callback(err, newObjects);
 		}
 	);

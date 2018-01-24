@@ -141,6 +141,7 @@ const receiveRenewSubscription = function (req, callback) {
 		const lineItems = _.get(req, 'body.data.object.lines.data');
 		// If contains 'year', then extend a year etc
 		const interval = _.some(lineItems, { plan: { interval: 'year' } }) ? 'year' : 'month';
+		// TODO: use interval_count from Stripe
 		const intervalCount = 1;
 		console.log(`Stripe "invoice.payment_succeeded" webhook for customer ${stripeCustomerId}, subscription ${stripeSubscriptionId}, extend ${intervalCount} ${interval}(s)`);
 		// Look up Account and Subscriptions in database
@@ -165,7 +166,7 @@ const receiveRenewSubscription = function (req, callback) {
 module.exports = {
 
 	// All methods should have signature `function({ payload1, ... }, callback)`
-	// and callbacks have signature `callback(error, ({ payload1, ... })`
+	// and callbacks have signature `callback(error, { payload1, ... })`
 
 	// CRUD operations
 	createSubscription: createSubscription,
