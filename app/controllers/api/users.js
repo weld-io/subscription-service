@@ -7,10 +7,12 @@
 'use strict';
 
 const _ = require('lodash');
+const async = require('async');
 const mongooseCrudify = require('mongoose-crudify');
 const helpers = require('../../config/helpers');
 const User = require('mongoose').model('User');
 const Account = require('mongoose').model('Account');
+const Plan = require('mongoose').model('Plan');
 
 // Private functions
 
@@ -33,6 +35,30 @@ const addServices = function (req, res, next) {
 	})
 };
 
+const createSubscription = function (req, res, next) {
+	const accountParameterType = Object.prototype.toString.call(req.body.account);
+	if (req.body.subscription) {
+		async.parallel({
+				account: Account.findById.bind(Account, req.body.account),
+				plan: Plan.findOne.bind(Plan, { reference: req.body.subscription.plan }),
+			},
+			// When all done
+			function (err, results) {
+				if (!err) {
+					const subscription = _.clone(req.body.subscription);
+					subscription.plan = results.plan._id;
+					subscription.dateExpires = helpers.getDateExpires(req.body.subscription);
+					results.account.subscriptions.push(helpers.toJsonIfNeeded(subscription));
+					results.account.save(next);
+				}
+				else {
+					next(err);
+				}
+			}
+		);
+	}
+};
+
 // Public API
 
 module.exports = function (app, config) {
@@ -44,7 +70,10 @@ module.exports = function (app, config) {
 			identifyingKey: identifyingKey,
 			beforeActions: [
 				{ middlewares: [helpers.checkIfAuthorizedUser.bind(this, undefined)], except: ['create'] }, // Apply to all CRUD operations except Create
-				{ middlewares: [helpers.changeReferenceToId.bind(this, { modelName:'Account', parentProperty:'account', childIdentifier:'reference' })], only: ['create', 'update'] },
+				{ middlewares: [
+					helpers.changeReferenceToId.bind(this, { modelName:'Account', parentProperty:'account', childIdentifier:'reference' }),
+					createSubscription
+				], only: ['create', 'update'] },
 				{ middlewares: [helpers.populateProperties.bind(this, { modelName:'user', propertyName:'account' })], only: ['read'] },
 			],
 			endResponseInAction: false,

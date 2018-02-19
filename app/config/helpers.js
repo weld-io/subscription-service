@@ -72,7 +72,7 @@ module.exports.getUniqueSlugFromCollection = function (collectionName, keyField=
 	});
 };
 
-module.exports.toJsonIfNeeded = obj => obj.toJSON ? obj = obj.toJSON() : obj;
+module.exports.toJsonIfNeeded = obj => obj.toJSON ? Object.assign(obj, obj.toJSON()) : obj;
 
 // [{ reference: foo, ... }, { reference: bar, ... }] -> { foo: ..., bar: ... }
 module.exports.arrayToCollection = (array, keyField='reference') => _.reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection; }, {});
@@ -156,7 +156,7 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
 		// Object: create new child object, e.g. create User and Account in one request
 		'[object Object]': {
 			lookupAction: 'create',
-			setSearchQuery: ({searchQuery, childIdentifier, req}) => searchQuery = req.body[parentProperty],
+			setSearchQuery: ({searchQuery, childIdentifier, req}) => Object.assign(searchQuery, req.body[parentProperty]),
 			setResults: ({results, parentProperty, req}) => req.body[parentProperty] = results._id,
 		},
 	};
@@ -206,6 +206,7 @@ module.exports.getChildObjects = function (objects, propertyName, modelName, cal
 module.exports.dateInDays = days => new Date((new Date()).getTime() + days*24*60*60*1000).getTime();
 module.exports.dateIn1Month = () => module.exports.dateInDays(31);
 module.exports.dateIn1Year = () => module.exports.dateInDays(366);
+module.exports.getDateExpires = sub => sub.dateExpires || (sub.billing === 'year' ? module.exports.dateIn1Year() : module.exports.dateIn1Month());
 
 module.exports.isSubscriptionActive = sub => sub.dateExpires > Date.now() && sub.dateStopped === undefined;
 

@@ -132,6 +132,10 @@ Note: `reference` is where you use your main permanent user ID, e.g. from anothe
 
 	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "userId2", "account": { "name": "My Company 2", "email": "invoices@mycompany2.com" } }'
 
+#### Create new user and account and subscription
+
+	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "userId2", "account": { "name": "My Company 2", "email": "invoices@mycompany2.com" }, "subscription": { "plan": "trial", "dateExpires": "2018-04-01" } }'
+
 #### Get user
 
 	curl -X GET http://localhost:3034/api/users/:reference

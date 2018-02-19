@@ -36,6 +36,15 @@ const UserSchema = new Schema({
 	}
 });
 
+// Set reference/slug
+UserSchema.pre('validate', function (next) {
+	const slugSuggestion = this.reference;
+	helpers.getUniqueSlugFromCollection('Account', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+		this.reference = uniqueSlug;
+		next();
+	});
+});
+
 UserSchema.methods.getAccounts = function (callback) {
 	this.populate('account', '-_id -__v', callback);
 };

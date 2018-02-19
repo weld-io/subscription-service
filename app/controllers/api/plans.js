@@ -7,7 +7,9 @@
 'use strict';
 
 const _ = require('lodash');
+const express = require('express');
 const mongooseCrudify = require('mongoose-crudify');
+
 const helpers = require('../../config/helpers');
 const Plan = require('mongoose').model('Plan');
 
@@ -96,9 +98,20 @@ const sortByPosition = function (req, res, next) {
 	next();
 };
 
+const updatePlanPartially = function (req, res, next) {
+	console.log(`updatePlanPartially`, req.params, req.body);
+	next();
+};
+
 // Public API
 
 module.exports = function (app, config) {
+
+	const router = express.Router();
+	app.use('/', router);
+
+	// CRUD routes: Account
+	//router.patch('/api/plans/:reference', updatePlanPartially);
 
 	app.use(
 		'/api/plans',

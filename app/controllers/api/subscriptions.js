@@ -96,9 +96,8 @@ const subscriptions = {
 					const updatedSubscription = _.merge({}, subscriptionToUpdate, _.pick(newSubscription, ['plan', 'billing']));
 
 					const updateSubscriptionOnAccount = function ({account, subscriptionToUpdate, newPlan}, cbAfterSave) {
-						const defaultExpiryDate = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
-						subscriptionToUpdate.dateExpires = req.body.dateExpires || defaultExpiryDate;
 						subscriptionToUpdate.plan = newPlan._id;
+						subscriptionToUpdate.dateExpires = helpers.getDateExpires(req.body);
 						account.save(cbAfterSave);
 					};
 
@@ -117,9 +116,8 @@ const subscriptions = {
 				// If NO existing subscription, create new
 				else {
 					const addSubscriptionToAccount = function ({user, account, subscription}, cbAfterSave) {
-						const defaultExpiryDate = req.body.billing === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
-						subscription.dateExpires = req.body.dateExpires || defaultExpiryDate;
 						subscription.plan = newPlan._id;
+						subscription.dateExpires = helpers.getDateExpires(req.body);
 						account.subscriptions.push(helpers.toJsonIfNeeded(subscription));
 						account.save(cbAfterSave);
 					};
@@ -143,6 +141,8 @@ const subscriptions = {
 		const sendResponse = function (err, {user, account, newSubscription}) {
 			helpers.sendResponse.call(res, err, _.get(account, 'subscriptions'));
 		};
+
+		console.log('Request:', _.pick(req, ['params', 'query', 'body']));
 
 		async.waterfall([
 				getAccountThen.bind(this, req, res),
