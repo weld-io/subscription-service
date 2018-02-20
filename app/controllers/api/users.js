@@ -57,6 +57,9 @@ const createSubscription = function (req, res, next) {
 			}
 		);
 	}
+	else {
+		next();
+	}
 };
 
 // Public API
