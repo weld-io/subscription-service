@@ -72,7 +72,7 @@ module.exports.getUniqueSlugFromCollection = function (collectionName, keyField=
 	});
 };
 
-module.exports.toJsonIfNeeded = obj => obj.toJSON ? Object.assign(obj, obj.toJSON()) : obj;
+module.exports.toJsonIfNeeded = obj => obj.toJSON ? obj = obj.toJSON() : obj;
 
 // [{ reference: foo, ... }, { reference: bar, ... }] -> { foo: ..., bar: ... }
 module.exports.arrayToCollection = (array, keyField='reference') => _.reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection; }, {});
