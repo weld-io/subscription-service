@@ -54,7 +54,7 @@ const addUsersActivePlan = function (req, res, next) {
 };
 
 const showCorrectVAT = function (req, res, next) {
-	helpers.toJsonIfNeeded(req.crudify.result);
+	req.crudify.result = helpers.toJsonIfNeeded(req.crudify.result);
 
 	const vatPercent = (parseFloat(process.env.VAT_PERCENT) || 20) / 100;
 
@@ -77,7 +77,7 @@ const showCorrectVAT = function (req, res, next) {
 		, 3);
 
 	const calculatePlanVAT = plan => {
-		helpers.toJsonIfNeeded(plan);
+		plan = helpers.toJsonIfNeeded(plan);
 		plan.vat = {};
 		_.forEach(plan.price, (amount, timeUnit) => {
 			if (timeUnit !== 'vatIncluded') {
@@ -93,7 +93,7 @@ const showCorrectVAT = function (req, res, next) {
 };
 
 const sortByPosition = function (req, res, next) {
-	helpers.toJsonIfNeeded(req.crudify.result);
+	req.crudify.result = helpers.toJsonIfNeeded(req.crudify.result);
 	req.crudify.result = _.sortBy(req.crudify.result, ['position']);
 	next();
 };
