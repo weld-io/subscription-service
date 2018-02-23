@@ -29,7 +29,9 @@ const getAccountThen = function (req, res, callback) {
 	// userReference provided
 	else if (req.params.userReference) {
 		User.findOne(query).exec((err, user) => {
-			Account.findById(user.account).exec(callback);
+			user
+				? Account.findById(user.account).exec(callback)
+				: callback('User not found');
 		});
 	}	
 };
@@ -37,7 +39,11 @@ const getAccountThen = function (req, res, callback) {
 const subscriptions = {
 
 	list: function (req, res, next) {
-		getAccountThen(req, res, (err, account) => res.json(account.subscriptions));
+		getAccountThen(req, res, (err, account) => {
+			account
+				? res.json(account.subscriptions)
+				: res.status(404).json({ message: 'Account not found' });
+		});
 	},
 
 	read: function (req, res, next) {
@@ -262,10 +268,10 @@ const subscriptions = {
 				User.find({ account: account._id }).exec((err, users) => {
 					postOutboundRenewWebhook({ account, users, subscriptions, interval, intervalCount });
 				});
-				res.send({ message: `Updated account and ${subscriptions.length} subscription(s)` });
+				res.json({ message: `Updated account and ${subscriptions.length} subscription(s)` });
 			}
 			else {
-				res.setStatus(400).send({ message: err });
+				res.status(400).json({ message: err });
 			}
 		})
 	},
