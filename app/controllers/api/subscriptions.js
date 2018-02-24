@@ -97,7 +97,8 @@ const subscriptions = {
 			}
 			else {
 				// If existing subscription
-				if (subscriptionToUpdate) {
+				// TODO: rewrite so no specific Stripe references here
+				if (_.has(subscriptionToUpdate, 'metadata.stripeSubscription') && _.has(account, 'metadata.stripeCustomer')) {
 					// Update existing
 					const updatedSubscription = _.merge({}, subscriptionToUpdate, _.pick(newSubscription, ['plan', 'billing']));
 
@@ -144,11 +145,9 @@ const subscriptions = {
 			}
 		};
 
-		const sendResponse = function (err, {user, account, newSubscription}) {
-			helpers.sendResponse.call(res, err, _.get(account, 'subscriptions'));
+		const sendResponse = function (err, results) {
+			helpers.sendResponse.call(res, err, _.get(results, 'account.subscriptions'));
 		};
-
-		console.log('Request:', _.pick(req, ['params', 'query', 'body']));
 
 		async.waterfall([
 				getAccountThen.bind(this, req, res),
