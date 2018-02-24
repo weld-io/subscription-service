@@ -97,7 +97,8 @@ const subscriptions = {
 			}
 			else {
 				// If existing subscription
-				if (subscriptionToUpdate) {
+				// TODO: rewrite so no specific Stripe references here
+				if (_.has(subscriptionToUpdate, 'metadata.stripeSubscription') && _.has(account, 'metadata.stripeCustomer')) {
 					// Update existing
 					const updatedSubscription = _.merge({}, subscriptionToUpdate, _.pick(newSubscription, ['plan', 'billing']));
 
