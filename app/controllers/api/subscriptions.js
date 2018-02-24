@@ -144,11 +144,9 @@ const subscriptions = {
 			}
 		};
 
-		const sendResponse = function (err, {user, account, newSubscription}) {
-			helpers.sendResponse.call(res, err, _.get(account, 'subscriptions'));
+		const sendResponse = function (err, results) {
+			helpers.sendResponse.call(res, err, _.get(results, 'account.subscriptions'));
 		};
-
-		console.log('Request:', _.pick(req, ['params', 'query', 'body']));
 
 		async.waterfall([
 				getAccountThen.bind(this, req, res),
