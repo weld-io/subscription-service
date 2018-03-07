@@ -152,7 +152,7 @@ const receiveRenewSubscription = function (req, callback) {
 				callback(null, { account, subscriptions, interval, intervalCount });
 			}
 			else {
-				callback('Account not found');
+				callback(`Account not found: ${stripeCustomerId}`);
 			}
 		});
 	}
