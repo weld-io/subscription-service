@@ -258,8 +258,9 @@ const subscriptions = {
 			}
 		};
 
-		paymentProvider.receiveRenewSubscription(req, function (err, { account, subscriptions, interval, intervalCount }) {
+		paymentProvider.receiveRenewSubscription(req, function (err, props) {
 			if (!err) {
+				const { account, subscriptions, interval, intervalCount } = props;
 				subscriptions.forEach(sub => {
 					sub.dateExpires = interval === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month();
 				});
@@ -270,6 +271,7 @@ const subscriptions = {
 				res.json({ message: `Updated account and ${subscriptions.length} subscription(s)` });
 			}
 			else {
+				console.log(`receiveRenewSubscription`, err);
 				res.status(400).json({ message: err });
 			}
 		})
