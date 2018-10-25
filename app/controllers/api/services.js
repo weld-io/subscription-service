@@ -4,32 +4,30 @@
 // Creator: Tom Söderlund
 //
 
-'use strict';
+'use strict'
 
-const mongooseCrudify = require('mongoose-crudify');
-const helpers = require('../../config/helpers');
-const Service = require('mongoose').model('Service');
+const mongooseCrudify = require('mongoose-crudify')
+const helpers = require('../../config/helpers')
+const Service = require('mongoose').model('Service')
 
 // Private functions
 
-const identifyingKey = 'reference';
+const identifyingKey = 'reference'
 
 // Public API
 
 module.exports = function (app, config) {
-
-	app.use(
-		'/api/services',
-		mongooseCrudify({
-			Model: Service,
-			identifyingKey: identifyingKey,
-			beforeActions: [
-			],
-			endResponseInAction: false,
-			afterActions: [
-				{ middlewares: [helpers.sendRequestResponse] },
-			],
-		})
-	);
-
-};
+  app.use(
+    '/api/services',
+    mongooseCrudify({
+      Model: Service,
+      identifyingKey: identifyingKey,
+      beforeActions: [
+      ],
+      endResponseInAction: false,
+      afterActions: [
+        { middlewares: [helpers.sendRequestResponse] }
+      ]
+    })
+  )
+}
