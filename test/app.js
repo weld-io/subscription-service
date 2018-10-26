@@ -23,10 +23,7 @@ test('Test the entire API', function (assert) {
     (results, cb) => { assert.equal(typeof (_.get(results, 'body.services')), 'object', 'plan’s services are objects'); cb(null, results) },
 
     // Services
-    (results, cb) => request(app).get('/api/services').expect(200, cb),
-
-    // Users
-    (results, cb) => request(app).get('/api/users').expect(200, cb)
+    (results, cb) => request(app).get('/api/services').expect(200, cb)
   ],
   (err, results) => {
     console.log(`DONE!`, { err })

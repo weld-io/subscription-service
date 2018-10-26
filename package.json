@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "nodemon app/server.js",
     "start": "node app/server.js",
-    "test": "node test/app.js",
-    "unit": "node test/app.js",
+    "testall": "echo 'Running Standard.js and Tape API tests...\n' && yarn lint && yarn unit",
+    "test": "node test/users.js && node test/app.js",
     "lint": "standard",
     "fix": "standard --fix"
   },

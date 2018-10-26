@@ -18,16 +18,14 @@ const paymentProvider = require('../../paymentProviders/' + PAYMENT_PROVIDER)
 
 const Account = require('mongoose').model('Account')
 const User = require('mongoose').model('User')
-const Plan = require('mongoose').model('Plan')
 
 const getAccountThen = function (req, res, callback) {
   const query = { reference: req.params.accountReference || req.params.userReference }
-  // accountReference provided
   if (req.params.accountReference) {
+    // accountReference provided
     Account.findOne(query).exec(callback)
-  }
-  // userReference provided
-  else if (req.params.userReference) {
+  } else if (req.params.userReference) {
+    // userReference provided
     User.findOne(query).exec((err, user) => {
       user
         ? Account.findById(user.account).exec(callback)
@@ -83,8 +81,6 @@ const subscriptions = {
         // TODO: how to handle the rest of allSubscriptionsToUpdate?
       }
 
-      const { subscriptions } = account
-
       cb(null, { user, account, newSubscription, subscriptionToUpdate, newPlan, oldPlans })
     }
 
@@ -116,9 +112,8 @@ const subscriptions = {
               err ? cb(err) : updateSubscriptionOnAccount({ account, subscriptionToUpdate, newPlan }, (saveErr, savedAccount) => cb(saveErr, { user, account: savedAccount, newSubscription: subscriptionToUpdate }))
             }
           )
-        }
-        // If NO existing subscription, create new
-        else {
+        } else {
+          // If NO existing subscription, create new
           const addSubscriptionToAccount = function ({ user, account, subscription }, cbAfterSave) {
             subscription.plan = newPlan._id
             subscription.dateExpires = helpers.getDateExpires(req.body)
@@ -202,8 +197,8 @@ const subscriptions = {
         account.subscriptions,
         (sub, cb) => {
           if ((req.params.subscriptionId === undefined || // Stop all
-						req.params.subscriptionId === sub._id.toString()) && // Stop one
-						!sub.dateStopped // Always: check that not already stopped
+            req.params.subscriptionId === sub._id.toString()) && // Stop one
+            !sub.dateStopped // Always: check that not already stopped
           ) {
             sub.dateStopped = Date.now()
             subsStopped++

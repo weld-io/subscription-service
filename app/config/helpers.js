@@ -139,7 +139,7 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
     '[object String]': {
       lookupAction: 'find',
       setSearchQuery: ({ searchQuery, childIdentifier, req }) => searchQuery[childIdentifier] = req.body[parentProperty],
-      setResults: ({ results, parentProperty, req }) => req.body[parentProperty] = results[0]._id
+      setResults: ({ results, parentProperty, req }) => req.body[parentProperty] = _.get(results, '0._id')
     },
     // Array: array of identifiers
     '[object Array]': {
@@ -151,7 +151,7 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
     '[object Object]': {
       lookupAction: 'create',
       setSearchQuery: ({ searchQuery, childIdentifier, req }) => Object.assign(searchQuery, req.body[parentProperty]),
-      setResults: ({ results, parentProperty, req }) => req.body[parentProperty] = results._id
+      setResults: ({ results, parentProperty, req }) => req.body[parentProperty] = _.get(results, '_id')
     }
   }
   const parentType = Object.prototype.toString.call(req.body[parentProperty])
