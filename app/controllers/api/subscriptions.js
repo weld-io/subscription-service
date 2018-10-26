@@ -14,6 +14,7 @@ const mongooseCrudify = require('mongoose-crudify')
 
 const helpers = require('../../config/helpers')
 const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || 'stripe'
+const DEFAULT_BILLING = 'month'
 const paymentProvider = require('../../paymentProviders/' + PAYMENT_PROVIDER)
 
 const Account = require('mongoose').model('Account')
@@ -50,7 +51,7 @@ const subscriptions = {
 
   create: function (req, res, next) {
     const createSubscriptionObject = function (account, cb) {
-      const newSubscription = _.merge({}, req.body)
+      const newSubscription = _.merge({ billing: DEFAULT_BILLING }, req.body)
       const user = { reference: req.params.userReference }
       cb(null, { user, account, newSubscription })
     }
@@ -161,7 +162,7 @@ const subscriptions = {
         {
           user: { reference: req.params.userReference },
           account,
-          subscription: { plan: req.body.plan, billing: req.body.billing },
+          subscription: { plan: req.body.plan, billing: req.body.billing || DEFAULT_BILLING },
           payment: { token: req.body.token /* taxPercent: */ }
         },
         cb
