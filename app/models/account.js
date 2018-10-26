@@ -48,6 +48,7 @@ const AccountSchema = new Schema({
   metadata: {} // for Stripe IDs etc
 },
 {
+  usePushEach: true,
   toJSON: {
     transform: function (doc, ret, options) {
       // showOnlyActiveSubscriptions(ret); // this is handled in User.getSubscriptionPlans now
