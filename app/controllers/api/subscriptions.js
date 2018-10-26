@@ -75,7 +75,7 @@ const subscriptions = {
       const getActiveSubscriptionsWithoutAllowMultiple = () => _.chain(account.subscriptions).filter(helpers.isSubscriptionActive).filter(isSubscriptionWithoutAllowMultiple).value()
 
       let subscriptionToUpdate
-      if (!newPlan.allowMultiple) {
+      if (newPlan && !newPlan.allowMultiple) {
         // Find old active plan with allowMultiple=false, if any
         const allSubscriptionsToUpdate = getActiveSubscriptionsWithoutAllowMultiple()
         subscriptionToUpdate = allSubscriptionsToUpdate[0]
