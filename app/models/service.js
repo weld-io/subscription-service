@@ -4,32 +4,32 @@
 // Creator: Tom Söderlund
 //
 
-'use strict';
+'use strict'
 
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
-const helpers = require('../config/helpers');
+const mongoose = require('mongoose')
+const Schema = mongoose.Schema
+const helpers = require('../config/helpers')
 
 const ServiceSchema = new Schema({
-	reference: { type: String, unique: true, required: true, sparse: true },
-	name: { type: String },
-	description: { type: String },
-	dateCreated: { type: Date, default: Date.now },
-	metadata: {}, // for extra data
+  reference: { type: String, unique: true, required: true, sparse: true },
+  name: { type: String },
+  description: { type: String },
+  dateCreated: { type: Date, default: Date.now },
+  metadata: {} // for extra data
 },
 {
-	toJSON: {
-		transform: helpers.stripIdsFromRet,
-	}
-});
+  toJSON: {
+    transform: helpers.stripIdsFromRet
+  }
+})
 
 // Set reference/slug
 ServiceSchema.pre('validate', function (next) {
-	const slugSuggestion = this.reference || this.name;
-	helpers.getUniqueSlugFromCollection('Service', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
-		this.reference = uniqueSlug;
-		next();
-	});
-});
+  const slugSuggestion = this.reference || this.name
+  helpers.getUniqueSlugFromCollection('Service', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+    this.reference = uniqueSlug
+    next()
+  })
+})
 
-mongoose.model('Service', ServiceSchema);
+mongoose.model('Service', ServiceSchema)

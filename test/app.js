@@ -1,41 +1,37 @@
-'use strict';
+'use strict'
 
-const _ = require('lodash');
-const test = require('tape');
-const request = require('supertest');
-const async = require('async');
+const _ = require('lodash')
+const test = require('tape')
+const request = require('supertest')
+const async = require('async')
 
-const TEST_PLAN = 'domain';
+const TEST_PLAN = 'domain'
 
-test('Test the entire API', function (assert) {
-	const app = require('../app/app');
-	async.waterfall([
-			// Accounts
-			(cb) => request(app).get('/api/accounts').expect(200, cb),
-			(results, cb) => { assert.ok(_.get(results, 'body.length'), 'Returned accounts list'); cb(null, results); },
-			(results, cb) => { assert.ok(_.get(results, 'body[0].reference'), 'account #0 has reference'); cb(null, results); },
+test('Test the Accounts/Plans/Services API', function (assert) {
+  const app = require('../app/app')
+  async.waterfall([
+    // Accounts
+    (cb) => request(app).get('/api/accounts').expect(200, cb),
+    (results, cb) => { assert.ok(_.get(results, 'body.length'), 'Returned accounts list'); cb(null, results) },
+    (results, cb) => { assert.ok(_.get(results, 'body[0].reference'), 'account #0 has reference'); cb(null, results) },
 
-			// Plans
-			(results, cb) => request(app).get('/api/plans').expect(200, cb),
-			(results, cb) => { assert.ok(_.get(results, 'body[0].reference'), 'plan #0 has reference'); cb(null, results); },
-			// get
-			(results, cb) => request(app).get(`/api/plans/${TEST_PLAN}`).expect(200, cb),
-			(results, cb) => { assert.equal(typeof(_.get(results, 'body.services')), 'object', 'plan’s services are objects'); cb(null, results); },
+    // Plans
+    (results, cb) => request(app).get('/api/plans').expect(200, cb),
+    (results, cb) => { assert.ok(_.get(results, 'body[0].reference'), 'plan #0 has reference'); cb(null, results) },
+    // get
+    (results, cb) => request(app).get(`/api/plans/${TEST_PLAN}`).expect(200, cb),
+    (results, cb) => { assert.equal(typeof (_.get(results, 'body.services')), 'object', 'plan’s services are objects'); cb(null, results) },
 
-			// Services
-			(results, cb) => request(app).get('/api/services').expect(200, cb),
-
-			// Users
-			(results, cb) => request(app).get('/api/users').expect(200, cb),
-		],
-		(err, results) => {
-			console.log(`DONE!`, {err});
-			app.closeDatabase();
-			assert.end();
-		}
-	);
-});
-
+    // Services
+    (results, cb) => request(app).get('/api/services').expect(200, cb)
+  ],
+  (err, results) => {
+    console.log(`DONE!`, { err })
+    app.closeDatabase()
+    assert.end()
+  }
+  )
+})
 
 // cb => { request(app).get('/new').expect(200, cb); },
 // cb => { request(app).post('/').send({prop1: 'new'}).expect(404, cb); },
@@ -45,21 +41,21 @@ test('Test the entire API', function (assert) {
 // cb => { request(app).delete('/0').expect(404, cb); },
 
 // test('Accounts: List', function (assert) {
-// 	const app = require('../app/app');
-// 	request(app)
-// 		.get('/api/accounts')
-// 		.expect('Content-Type', /json/)
-// 		.expect(200)
-// 		.end(function (err, results) {
-// 			assert.error(err, 'No error');
-// 			assert.ok(results.body.length, 'Returned accounts list');
-// 			assert.ok(results.body[0], 'account #0 existed');
-// 			assert.ok(results.body[0].reference, 'account #0 has reference');
-// 			assert.ok(results.body[0].dateCreated, 'account #0 has dateCreated');
-// 			//assert.same(results.body, expectedUsers, 'Users as expected');
-// 			assert.end();
-// 			app.closeDatabase();
-// 		});
+//  const app = require('../app/app');
+//  request(app)
+//    .get('/api/accounts')
+//    .expect('Content-Type', /json/)
+//    .expect(200)
+//    .end(function (err, results) {
+//      assert.error(err, 'No error');
+//      assert.ok(results.body.length, 'Returned accounts list');
+//      assert.ok(results.body[0], 'account #0 existed');
+//      assert.ok(results.body[0].reference, 'account #0 has reference');
+//      assert.ok(results.body[0].dateCreated, 'account #0 has dateCreated');
+//      //assert.same(results.body, expectedUsers, 'Users as expected');
+//      assert.end();
+//      app.closeDatabase();
+//    });
 // });
 
 // https://github.com/substack/tape
@@ -70,7 +66,7 @@ test.onFinish(fn)
 test.only(name, cb)
 test.createStream().pipe(process.stdout);
 test.createStream({ objectMode: true }).on('data', function (row) {
-	console.log(JSON.stringify(row))
+  console.log(JSON.stringify(row))
 });
 
 t.plan(n)
@@ -95,11 +91,11 @@ t.comment(message)
 */
 
 // test('Codegenerator', function (t) {
-// 	var codegenerator = require('../app/lib/codegenerator');
-// 	t.plan(3);
-// 	t.equal(codegenerator.generateCode(0), 'ba');
-// 	t.equal(codegenerator.generateCode(20000), 'bibaba');
-// 	t.equal(codegenerator.generateCode(12345678), 'fakiqevo');
-// 	t.equal(codegenerator.generateCode(1000000), 'fakiqevo');
-// 	t.end();
+//  var codegenerator = require('../app/lib/codegenerator');
+//  t.plan(3);
+//  t.equal(codegenerator.generateCode(0), 'ba');
+//  t.equal(codegenerator.generateCode(20000), 'bibaba');
+//  t.equal(codegenerator.generateCode(12345678), 'fakiqevo');
+//  t.equal(codegenerator.generateCode(1000000), 'fakiqevo');
+//  t.end();
 // });

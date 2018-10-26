@@ -1,3 +1,4 @@
 node_modules/
 
 local_env.sh
+yarn-error.log
