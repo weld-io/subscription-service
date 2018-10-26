@@ -243,9 +243,11 @@ Partial update:
 
 #### Start subscription
 
+By Account:
+
 	curl -X POST http://localhost:3034/api/accounts/:accountReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package", "billing": "year" }'
 
-or:
+or by User:
 
 	curl -X POST http://localhost:3034/api/users/:userReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package" }'
 

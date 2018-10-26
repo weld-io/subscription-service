@@ -7,7 +7,7 @@ const async = require('async')
 
 const TEST_PLAN = 'domain'
 
-test('Test the entire API', function (assert) {
+test('Test the Accounts/Plans/Services API', function (assert) {
   const app = require('../app/app')
   async.waterfall([
     // Accounts

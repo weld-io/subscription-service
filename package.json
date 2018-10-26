@@ -9,7 +9,7 @@
     "dev": "nodemon app/server.js",
     "start": "node app/server.js",
     "testall": "echo 'Running Standard.js and Tape API tests...\n' && yarn lint && yarn unit",
-    "test": "node test/users.js && node test/app.js",
+    "test": "node test/users.js && node test/subscriptions.js && node test/app.js",
     "lint": "standard",
     "fix": "standard --fix"
   },
