@@ -31,7 +31,8 @@ const PlanSchema = new Schema({
     month: Number,
     year: Number,
     once: Number,
-    vatIncluded: Boolean
+    vatIncluded: Boolean,
+    currency: String
   },
   trialDays: { type: Number },
   consumables: [Consumable], // see above
