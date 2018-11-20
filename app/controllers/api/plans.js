@@ -80,11 +80,12 @@ const showCorrectVAT = function (req, res, next) {
     plan = helpers.toJsonIfNeeded(plan)
     plan.vat = {}
     _.forEach(plan.price, (amount, timeUnit) => {
-      if (timeUnit !== 'vatIncluded') {
+      if (['year', 'month', 'once'].includes(timeUnit)) {
         plan.vat[timeUnit] = calculateVatAmount(amount, vatPercent, plan.price.vatIncluded, (req.query.includeVAT !== 'false'))
         plan.price[timeUnit] = calculatePriceAmount(amount, vatPercent, plan.price.vatIncluded, (req.query.includeVAT !== 'false'))
       }
     })
+    plan.price.currency = plan.price.currency || '$'
     return plan
   }
 

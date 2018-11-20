@@ -1,6 +1,6 @@
 {
   "name": "subscription-service",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "REST API service managing subscription pricing, services, consumables, VAT, etc. Built in Node.js.",
   "author": "Weld (www.weld.io)",
   "license": "MIT",
@@ -9,7 +9,8 @@
     "dev": "nodemon app/server.js",
     "start": "node app/server.js",
     "testall": "echo 'Running Standard.js and Tape API tests...\n' && yarn lint && yarn unit",
-    "test": "node test/users.js && node test/subscriptions.js && node test/app.js",
+    "test": "export DISABLE_JWT=true && node test/users.js && node test/subscriptions.js && node test/app.js",
+    "test-tape": "DISABLE_JWT=true tape test/**/*.js",
     "lint": "standard",
     "fix": "standard --fix"
   },
