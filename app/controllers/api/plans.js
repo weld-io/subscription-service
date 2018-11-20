@@ -85,7 +85,7 @@ const showCorrectVAT = function (req, res, next) {
         plan.price[timeUnit] = calculatePriceAmount(amount, vatPercent, plan.price.vatIncluded, (req.query.includeVAT !== 'false'))
       }
     })
-    plan.price.currency = plan.price.currency || '$'
+    if (plan.price) plan.price.currency = plan.price.currency || '$'
     return plan
   }
 
