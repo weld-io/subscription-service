@@ -137,11 +137,11 @@ const receiveRenewSubscription = function (req, callback) {
         const subscriptions = _.chain(account.subscriptions).filter(sub => _.get(sub, 'metadata.stripeSubscription') === stripeSubscriptionId).value()
         callback(null, { account, subscriptions, interval, intervalCount })
       } else {
-        callback(`Account not found: ${stripeCustomerId}`)
+        callback(new Error(`Account not found: ${stripeCustomerId}`))
       }
     })
   } else {
-    callback('No valid Stripe webhook')
+    callback(new Error('No valid Stripe webhook'))
   }
 }
 

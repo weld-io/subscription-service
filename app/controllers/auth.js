@@ -1,13 +1,9 @@
 'use strict'
 
-const _ = require('lodash')
-const express = require('express')
+const jwt = require('express-jwt')
 
 module.exports = function (app, config) {
-  const router = express.Router()
-
   // Sets the JWT properties req.user.d.uid and req.user.d.role
-  const jwt = require('express-jwt')
 
   if (process.env.DISABLE_JWT !== 'true') {
     app.use(

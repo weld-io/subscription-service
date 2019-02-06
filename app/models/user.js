@@ -10,7 +10,6 @@ const _ = require('lodash')
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 const helpers = require('../config/helpers')
-const Account = require('mongoose').model('Account')
 const Plan = require('mongoose').model('Plan')
 
 // Consumable: e.g. projects, documents, domains

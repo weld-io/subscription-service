@@ -10,7 +10,6 @@ const _ = require('lodash')
 const async = require('async')
 const express = require('express')
 const fetch = require('node-fetch')
-const mongooseCrudify = require('mongoose-crudify')
 
 const helpers = require('../../config/helpers')
 const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || 'stripe'
@@ -28,9 +27,9 @@ const getAccountThen = function (req, res, callback) {
   } else if (req.params.userReference) {
     // userReference provided
     User.findOne(query).exec((err, user) => {
-      user
+      (!err && user)
         ? Account.findById(user.account).exec(callback)
-        : callback('User not found')
+        : callback(new Error('User not found'))
     })
   }
 }
@@ -39,7 +38,7 @@ const subscriptions = {
 
   list: function (req, res, next) {
     getAccountThen(req, res, (err, account) => {
-      account
+      (!err && account)
         ? res.json(account.subscriptions)
         : res.status(404).json({ message: 'Account not found' })
     })
@@ -107,7 +106,7 @@ const subscriptions = {
               user,
               account,
               subscription: updatedSubscription,
-              payment: { token: req.body.token /* taxPercent: */ }
+              payment: { token: req.body.token } // taxPercent
             },
             (err, result) => {
               err ? cb(err) : updateSubscriptionOnAccount({ account, subscriptionToUpdate, newPlan }, (saveErr, savedAccount) => cb(saveErr, { user, account: savedAccount, newSubscription: subscriptionToUpdate }))
@@ -128,7 +127,7 @@ const subscriptions = {
               user,
               account,
               subscription: newSubscription,
-              payment: { token: req.body.token /* taxPercent: */ }
+              payment: { token: req.body.token } // taxPercent
             },
             (err, result) => {
               err ? cb(err) : addSubscriptionToAccount(result, (saveErr, savedAccount) => cb(saveErr, { user, account: savedAccount, newSubscription: result.subscription }))
@@ -163,7 +162,7 @@ const subscriptions = {
           user: { reference: req.params.userReference },
           account,
           subscription: { plan: req.body.plan, billing: req.body.billing || DEFAULT_BILLING },
-          payment: { token: req.body.token /* taxPercent: */ }
+          payment: { token: req.body.token } // taxPercent
         },
         cb
       )
@@ -193,6 +192,10 @@ const subscriptions = {
   // Stop one or all subscriptions
   delete: function (req, res, next) {
     getAccountThen(req, res, (err, account) => {
+      if (err) {
+        res.status(400).json({ message: err.message })
+        return
+      }
       let subsStopped = 0
       async.eachSeries(
         account.subscriptions,
