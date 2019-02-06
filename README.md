@@ -265,6 +265,17 @@ or:
 	curl -X PUT http://localhost:3034/api/users/:userReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
 
 
+#### Renew subscription
+
+E.g. called from Stripe webhook:
+
+	curl -X POST http://localhost:3034/api/subscriptions/renew
+
+See “Stripe example webhook” below.
+
+Will send a POST to URL specified in `WEBHOOK_RENEW_SUBSCRIPTION` if successful.
+
+
 #### Stop subscription
 
 Note: when you stop a subscription, it’s not deleted but a `dateStopped` is set and the subscription won’t be listed in Account/User.subscriptions.
