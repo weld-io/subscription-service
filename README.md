@@ -121,7 +121,7 @@ For B2B apps, there can be multiple Users on each Account.
 
 #### Update existing account
 
-	curl -X PATCH http://localhost:3034/api/accounts/:accountReference -H "Content-Type: application/json" -d '{ "name": "My New Company" }'
+	curl -X PATCH http://localhost:3034/api/accounts/:accountReference -H "Content-Type: application/json" -d '{ "metadata.stripeCustomer": "XYZ" }'
 
 
 ### Users
