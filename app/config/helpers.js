@@ -86,15 +86,17 @@ module.exports.applyToAll = (func, objectOrArray) => objectOrArray.constructor =
 _.mixin({ 'applyToAll': module.exports.applyToAll })
 module.exports.applyToAllAsync = (func, objectOrArray, cbWhenDone) => async.eachOfSeries((objectOrArray.constructor === Array ? objectOrArray : [objectOrArray]), func, cbWhenDone)
 
+const getErrorCode = (err, results) => err
+  ? err.statusCode || 400
+  : (results === undefined || results === null)
+    ? 404
+    : 200
+
 // Simple JSON response, usage e.g.
 // 1. helpers.sendResponse.bind(res) - err, results will be appended to end
 // 2. .find((err, results) => helpers.sendResponse.call(res, err, results))
 module.exports.sendResponse = function (err, results, callback) {
-  const errorCode = err
-    ? err.statusCode || 400
-    : (results === undefined || results === null)
-      ? 404
-      : 200
+  const errorCode = getErrorCode(err, results)
   // console.log('sendResponse', errorCode, err, results, typeof(callback));
   if (errorCode !== 200) {
     return this.status(errorCode).send({ code: errorCode, message: _.get(err, 'message'), error: err })
@@ -111,6 +113,21 @@ module.exports.sendResponse = function (err, results, callback) {
 
 module.exports.sendRequestResponse = function (req, res, next) {
   module.exports.sendResponse.call(res, null, req.crudify.result)
+}
+
+module.exports.processAndRespond = async (res, promise) => {
+  let err, results
+  try {
+    results = await promise
+  } catch (thisErr) {
+    err = thisErr
+  } finally {
+    const statusCode = getErrorCode(err, results)
+    const message = (statusCode === 404) ? 'Not found' : err && err.message
+    const response = (statusCode === 200) ? results : { statusCode, message }
+    res.status(statusCode)
+    res.json(response)
+  }
 }
 
 module.exports.checkIfAuthorizedUser = function (reqPropertyName = 'params.reference', req, res, next) {
