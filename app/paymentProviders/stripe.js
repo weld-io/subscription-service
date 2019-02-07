@@ -37,6 +37,7 @@ const createStripeUserAndSubscription = function ({ user, account, subscription,
   // Extra options for Create
   _.merge(stripeCustomerObj, {
     description: account.reference,
+    email: account.email,
     metadata: {
       user_id: user.reference
     }
@@ -50,6 +51,7 @@ const createStripeUserAndSubscription = function ({ user, account, subscription,
         callback(stripeErr)
       } else {
         _.set(account, 'metadata.stripeCustomer', _.get(stripeCustomer, 'id'))
+        account.markModified('metadata')
         _.set(subscription, 'metadata.stripeSubscription', _.get(stripeCustomer, 'subscriptions.data.0.id'))
         callback(null, { user, account, subscription })
       }
