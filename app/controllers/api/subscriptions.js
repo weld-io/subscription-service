@@ -12,9 +12,9 @@ const express = require('express')
 const fetch = require('node-fetch')
 
 const helpers = require('../../config/helpers')
-const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || 'stripe'
 const DEFAULT_BILLING = 'month'
-const paymentProvider = require('../../paymentProviders/' + PAYMENT_PROVIDER)
+const paymentProvider = helpers.getPaymentProvider()
+const cacheProvider = helpers.getCacheProvider()
 
 const Account = require('mongoose').model('Account')
 const User = require('mongoose').model('User')
@@ -176,6 +176,7 @@ const updateSubscription = function (req, res, next) {
   }
 
   const sendResponse = function (err, account) {
+    cacheProvider.purgeContentByKey(account.reference)
     helpers.sendResponse.call(res, err, _.get(account, 'subscriptions.' + getSubscriptionIndex(account)))
   }
 
@@ -212,6 +213,7 @@ const deleteSubscription = function (req, res, next) {
       },
       // When done
       (err) => {
+        cacheProvider.purgeContentByKey(account.reference)
         account.save((err, results) => helpers.sendResponse.call(res, err, { message: `Stopped ${subsStopped} subscriptions` }))
       }
     )
@@ -253,6 +255,7 @@ const renewSubscription = function (req, res, next) {
         sub.dateExpires = interval === 'year' ? helpers.dateIn1Year() : helpers.dateIn1Month()
       })
       account.save()
+      cacheProvider.purgeContentByKey(account.reference)
       User.find({ account: account._id }).exec((err, users) => {
         postOutboundRenewWebhook({ account, users, subscriptions, interval, intervalCount })
       })

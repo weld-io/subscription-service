@@ -4,6 +4,9 @@ const _ = require('lodash')
 const async = require('async')
 const mongoose = require('mongoose')
 
+module.exports.getPaymentProvider = () => require('../paymentProviders/' + (process.env.PAYMENT_PROVIDER || 'stripe'))
+module.exports.getCacheProvider = () => require('../cacheProviders/' + (process.env.CACHE_PROVIDER || 'fastly'))
+
 // Specify v2: Get all properties for an object (console.dir):
 module.exports.specify = function (obj) {
   const getValueDescription = function (val) {
