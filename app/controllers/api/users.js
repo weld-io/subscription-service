@@ -9,7 +9,9 @@
 const _ = require('lodash')
 const async = require('async')
 const mongooseCrudify = require('mongoose-crudify')
+
 const helpers = require('../../config/helpers')
+const cacheProvider = helpers.getCacheProvider()
 const User = require('mongoose').model('User')
 const Account = require('mongoose').model('Account')
 const Plan = require('mongoose').model('Plan')
@@ -33,6 +35,11 @@ const addServices = function (req, res, next) {
     req.crudify.result.services = services
     next()
   })
+}
+
+const addCachingKey = function (req, res, next) {
+  cacheProvider.setKeyOnResponse(res, _.get(req, 'crudify.user.account.reference'))
+  next()
 }
 
 const createSubscription = function (req, res, next) {
@@ -78,7 +85,7 @@ module.exports = function (app, config) {
       ],
       endResponseInAction: false,
       afterActions: [
-        { middlewares: [addPlans, addServices], only: ['read'] },
+        { middlewares: [addPlans, addServices, addCachingKey], only: ['read'] },
         { middlewares: [helpers.sendRequestResponse] }
       ]
     })
