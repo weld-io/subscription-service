@@ -119,6 +119,10 @@ For B2B apps, there can be multiple Users on each Account.
 
 	curl -X POST http://localhost:3034/api/accounts -H "Content-Type: application/json" -d '{ "name": "My Company" }'
 
+#### Update existing account
+
+	curl -X PATCH http://localhost:3034/api/accounts/:accountReference -H "Content-Type: application/json" -d '{ "name": "My New Company" }'
+
 
 ### Users
 
@@ -263,6 +267,17 @@ Partial update:
 or:
 
 	curl -X PUT http://localhost:3034/api/users/:userReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
+
+
+#### Renew subscription
+
+E.g. called from Stripe webhook:
+
+	curl -X POST http://localhost:3034/api/subscriptions/renew
+
+See “Stripe example webhook” below.
+
+Will send a POST to URL specified in `WEBHOOK_RENEW_SUBSCRIPTION` if successful.
 
 
 #### Stop subscription

@@ -1,5 +1,4 @@
-const path = require('path')
-const rootPath = path.normalize(__dirname + '/..')
+const rootPath = require('path').join(__dirname, '/..')
 const env = process.env.NODE_ENV || 'development'
 console.log(`Environment is "${env}"`)
 

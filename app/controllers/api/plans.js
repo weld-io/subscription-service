@@ -99,10 +99,10 @@ const sortByPosition = function (req, res, next) {
   next()
 }
 
-const updatePlanPartially = function (req, res, next) {
-  console.log(`updatePlanPartially`, req.params, req.body)
-  next()
-}
+// const updatePlanPartially = function (req, res, next) {
+//   console.log(`updatePlanPartially`, req.params, req.body)
+//   next()
+// }
 
 // Public API
 

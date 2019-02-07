@@ -31,9 +31,11 @@ module.exports.toSlug = function (str, removeInternationalChars) {
     .replace(/_/g, '-') // underscore to dash
   // Remove ÅÄÖ etc?
   if (removeInternationalChars) {
-    newStr = newStr.replace(/[^\w-]+/g, '') // remove all other characters incl. ÅÄÖ
+    // remove all other characters incl. ÅÄÖ
+    newStr = newStr.replace(/[^\w-]+/g, '')
   } else {
-    newStr = newStr.replace(/[\t.,?;:‘’“”"'`!@#$€%^&§°*<>()\[\]{}_\+=\/\|\\]/g, '') // remove invalid characters but keep ÅÄÖ etc
+    // remove invalid characters but keep ÅÄÖ etc
+    newStr = newStr.replace(/[\t.,?;:‘’“”"'`!@#$€%^&§°*<>()\[\]{}_\+=\/\|\\]/g, '') // eslint-disable-line no-useless-escape
   }
   // For both
   newStr = newStr.replace(/---/g, '-') // fix for the ' - ' case
@@ -70,7 +72,10 @@ module.exports.getUniqueSlugFromCollection = function (collectionName, keyField 
   })
 }
 
-module.exports.toJsonIfNeeded = obj => obj.toJSON ? obj = obj.toJSON() : obj
+module.exports.toJsonIfNeeded = obj => {
+  obj = obj.toJSON ? obj.toJSON() : obj
+  return obj
+}
 
 // [{ reference: foo, ... }, { reference: bar, ... }] -> { foo: ..., bar: ... }
 module.exports.arrayToCollection = (array, keyField = 'reference') => _.reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection }, {})
@@ -81,15 +86,17 @@ module.exports.applyToAll = (func, objectOrArray) => objectOrArray.constructor =
 _.mixin({ 'applyToAll': module.exports.applyToAll })
 module.exports.applyToAllAsync = (func, objectOrArray, cbWhenDone) => async.eachOfSeries((objectOrArray.constructor === Array ? objectOrArray : [objectOrArray]), func, cbWhenDone)
 
+const getErrorCode = (err, results) => err
+  ? err.statusCode || 400
+  : (results === undefined || results === null)
+    ? 404
+    : 200
+
 // Simple JSON response, usage e.g.
 // 1. helpers.sendResponse.bind(res) - err, results will be appended to end
 // 2. .find((err, results) => helpers.sendResponse.call(res, err, results))
 module.exports.sendResponse = function (err, results, callback) {
-  const errorCode = err
-    ? err.statusCode || 400
-    : (results === undefined || results === null)
-      ? 404
-      : 200
+  const errorCode = getErrorCode(err, results)
   // console.log('sendResponse', errorCode, err, results, typeof(callback));
   if (errorCode !== 200) {
     return this.status(errorCode).send({ code: errorCode, message: _.get(err, 'message'), error: err })
@@ -106,6 +113,21 @@ module.exports.sendResponse = function (err, results, callback) {
 
 module.exports.sendRequestResponse = function (req, res, next) {
   module.exports.sendResponse.call(res, null, req.crudify.result)
+}
+
+module.exports.processAndRespond = async (res, promise) => {
+  let err, results
+  try {
+    results = await promise
+  } catch (thisErr) {
+    err = thisErr
+  } finally {
+    const statusCode = getErrorCode(err, results)
+    const message = (statusCode === 404) ? 'Not found' : err && err.message
+    const response = (statusCode === 200) ? results : { statusCode, message }
+    res.status(statusCode)
+    res.json(response)
+  }
 }
 
 module.exports.checkIfAuthorizedUser = function (reqPropertyName = 'params.reference', req, res, next) {
@@ -138,20 +160,20 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
     // String: one identifier
     '[object String]': {
       lookupAction: 'find',
-      setSearchQuery: ({ searchQuery, childIdentifier, req }) => searchQuery[childIdentifier] = req.body[parentProperty],
-      setResults: ({ results, parentProperty, req }) => req.body[parentProperty] = _.get(results, '0._id')
+      setSearchQuery: ({ searchQuery, childIdentifier, req }) => { searchQuery[childIdentifier] = req.body[parentProperty]; return searchQuery },
+      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = _.get(results, '0._id'); return req.body }
     },
     // Array: array of identifiers
     '[object Array]': {
       lookupAction: 'find',
-      setSearchQuery: ({ searchQuery, childIdentifier, req }) => searchQuery[childIdentifier] = { $in: req.body[parentProperty] },
-      setResults: ({ results, parentProperty, req }) => req.body[parentProperty] = _.map(results, '_id')
+      setSearchQuery: ({ searchQuery, childIdentifier, req }) => { searchQuery[childIdentifier] = { $in: req.body[parentProperty] }; return searchQuery },
+      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = _.map(results, '_id'); return req.body }
     },
     // Object: create new child object, e.g. create User and Account in one request
     '[object Object]': {
       lookupAction: 'create',
-      setSearchQuery: ({ searchQuery, childIdentifier, req }) => Object.assign(searchQuery, req.body[parentProperty]),
-      setResults: ({ results, parentProperty, req }) => req.body[parentProperty] = _.get(results, '_id')
+      setSearchQuery: ({ searchQuery, childIdentifier, req }) => { Object.assign(searchQuery, req.body[parentProperty]); return searchQuery },
+      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = _.get(results, '_id'); return req.body }
     }
   }
   const parentType = Object.prototype.toString.call(req.body[parentProperty])

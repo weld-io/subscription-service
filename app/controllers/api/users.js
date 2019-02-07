@@ -36,7 +36,6 @@ const addServices = function (req, res, next) {
 }
 
 const createSubscription = function (req, res, next) {
-  const accountParameterType = Object.prototype.toString.call(req.body.account)
   if (req.body.subscription) {
     async.parallel({
       account: Account.findById.bind(Account, req.body.account),
