@@ -12,12 +12,13 @@ const express = require('express')
 const fetch = require('node-fetch')
 
 const helpers = require('../../config/helpers')
-const DEFAULT_BILLING = 'month'
 const paymentProvider = helpers.getPaymentProvider()
 const cacheProvider = helpers.getCacheProvider()
 
 const Account = require('mongoose').model('Account')
 const User = require('mongoose').model('User')
+
+const DEFAULT_BILLING = 'month'
 
 const getAccountThen = function (req, res, callback) {
   const query = { reference: req.params.accountReference || req.params.userReference }
@@ -34,16 +35,36 @@ const getAccountThen = function (req, res, callback) {
   }
 }
 
+const getAccount = async params => {
+  const query = { reference: params.accountReference || params.userReference }
+  if (params.accountReference) {
+    return Account.findOne(query).exec()
+  } else {
+    const user = await User.findOne(query).exec()
+    return Account.findById(user.account).exec()
+  }
+}
+
 const listSubscriptions = function (req, res, next) {
-  getAccountThen(req, res, (err, account) => {
-    (!err && account)
-      ? res.json(account.subscriptions)
-      : res.status(404).json({ message: 'Account not found' })
-  })
+  helpers.processAndRespond(res, new Promise(async (resolve, reject) => {
+    try {
+      const account = await getAccount(req.params)
+      resolve(account.subscriptions)
+    } catch (err) {
+      reject(err)
+    }
+  }))
 }
 
 const readSubscription = function (req, res, next) {
-  res.json({})
+  helpers.processAndRespond(res, new Promise(async (resolve, reject) => {
+    try {
+      const account = await getAccount(req.params)
+      resolve(account.subscriptions.filter(sub => sub._id = req.params.subscriptionId)[0])
+    } catch (err) {
+      reject(err)
+    }
+  }))
 }
 
 const createSubscription = function (req, res, next) {
