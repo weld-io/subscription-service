@@ -136,10 +136,11 @@ module.exports.processAndRespond = async (res, promise) => {
 module.exports.checkIfAuthorizedUser = function (reqPropertyName = 'params.reference', req, res, next) {
   const userReference = _.get(req, reqPropertyName)
   const jwtUserId = _.get(req, 'user.d.uid')
-  if (userReference === jwtUserId || process.env.DISABLE_JWT === 'true') {
+  const isAdmin = _.get(req, 'user.d.role') === 'admin'
+  if (userReference === jwtUserId || isAdmin || process.env.DISABLE_JWT === 'true') {
     next()
   } else {
-    res.status(401).json({ message: 'Only the authorized user can access this' })
+    res.status(401).json({ message: 'Only the authorized user or an admin can access this' })
   };
 }
 
