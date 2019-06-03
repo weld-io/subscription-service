@@ -1,5 +1,6 @@
 node_modules/
 local-scripts/
 
+.env
 local_env.sh
 yarn-error.log

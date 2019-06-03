@@ -1,5 +1,6 @@
 'use strict'
 
+require('dotenv').config()
 const _ = require('lodash')
 const test = require('tape')
 const request = require('supertest')
