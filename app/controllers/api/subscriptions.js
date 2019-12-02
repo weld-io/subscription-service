@@ -107,6 +107,7 @@ const createSubscription = function (req, res, next) {
   const createPaymentProviderSubscription = function ({ user, account, newSubscription, subscriptionToUpdate, newPlan, oldPlans }, cb) {
     // Use ?ignorePaymentProvider=true on URL to avoid Stripe subscriptions being created, e.g. for migration purposes
     if (_.has(req, 'query.ignorePaymentProvider')) {
+      // TODO: make it actually save/create subscription in database
       cb(null, { user, account, newSubscription })
     } else {
       // If existing subscription
