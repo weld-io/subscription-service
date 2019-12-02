@@ -31,18 +31,18 @@ Optional:
 
 Then, just start with:
 
-	npm run dev # development
+	yarn dev  # development, you can also use DISABLE_JWT=true yarn dev
 
 or
 
-	npm start # production
+	yarn start # production
 
 Server will default to **http://localhost:3034**
 
 
 ## How to Test
 
-	npm test
+	yarn test
 
 
 ## Entities
