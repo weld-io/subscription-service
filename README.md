@@ -255,7 +255,10 @@ or by User:
 
 	curl -X POST http://localhost:3034/api/users/:userReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package" }'
 
-Note: `billing` defaults to "month".
+Notes:
+
+- `billing` defaults to "month".
+- Use `?ignorePaymentProvider=true` to not activate Stripe.
 
 
 #### Update subscription
