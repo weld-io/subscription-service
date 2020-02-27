@@ -6,39 +6,40 @@
 
 'use strict'
 
-const _ = require('lodash')
+const { clone, get, map } = require('lodash')
 const async = require('async')
 const mongooseCrudify = require('mongoose-crudify')
 
-const helpers = require('../../config/helpers')
-const cacheProvider = helpers.getCacheProvider()
+const { changeReferenceToId, checkIfAuthorizedUser, getCacheProvider, getDateExpires, populateProperties, sendRequestResponse, toJsonIfNeeded } = require('../../config/helpers')
 const User = require('mongoose').model('User')
 const Account = require('mongoose').model('Account')
 const Plan = require('mongoose').model('Plan')
+
+const cacheProvider = getCacheProvider()
 
 // Private functions
 
 const identifyingKey = 'reference'
 
 const addPlans = function (req, res, next) {
-  req.crudify.user.getSubscriptionPlans({ includeAllSubscriptions: _.get(req, 'query.includeAllSubscriptions') }, (err, { subscriptions, subscriptionsWithPlan }) => {
-    req.crudify.result = helpers.toJsonIfNeeded(req.crudify.result)
+  req.crudify.user.getSubscriptionPlans({ includeAllSubscriptions: get(req, 'query.includeAllSubscriptions') }, (err, { subscriptions, subscriptionsWithPlan }) => {
+    req.crudify.result = toJsonIfNeeded(req.crudify.result)
     req.crudify.result.account.subscriptions = subscriptionsWithPlan
-    req.crudify.result.plans = _.map(subscriptionsWithPlan, subscriptionPlan => subscriptionPlan.plan.reference)
+    req.crudify.result.plans = map(subscriptionsWithPlan, subscriptionPlan => subscriptionPlan.plan.reference)
     next()
   })
 }
 
 const addServices = function (req, res, next) {
   req.crudify.user.getServices((err, services) => {
-    req.crudify.result = helpers.toJsonIfNeeded(req.crudify.result)
+    req.crudify.result = toJsonIfNeeded(req.crudify.result)
     req.crudify.result.services = services
     next()
   })
 }
 
 const addCachingKey = function (req, res, next) {
-  cacheProvider.setKeyOnResponse(res, _.get(req, 'crudify.user.account.reference'))
+  cacheProvider.setKeyOnResponse(res, get(req, 'crudify.user.account.reference'))
   next()
 }
 
@@ -51,10 +52,10 @@ const createSubscription = function (req, res, next) {
     // When all done
     function (err, results) {
       if (!err) {
-        const subscription = _.clone(req.body.subscription)
+        const subscription = clone(req.body.subscription)
         subscription.plan = results.plan._id
-        subscription.dateExpires = helpers.getDateExpires(req.body.subscription)
-        results.account.subscriptions.push(helpers.toJsonIfNeeded(subscription))
+        subscription.dateExpires = getDateExpires(req.body.subscription)
+        results.account.subscriptions.push(toJsonIfNeeded(subscription))
         results.account.save(next)
       } else {
         next(err)
@@ -75,18 +76,18 @@ module.exports = function (app, config) {
       Model: User,
       identifyingKey: identifyingKey,
       beforeActions: [
-        { middlewares: [helpers.checkIfAuthorizedUser.bind(this, undefined)], except: ['create'] }, // Apply to all CRUD operations except Create
+        { middlewares: [checkIfAuthorizedUser.bind(this, undefined)], except: ['create'] }, // Apply to all CRUD operations except Create
         { middlewares: [
-          helpers.changeReferenceToId.bind(this, { modelName: 'Account', parentProperty: 'account', childIdentifier: 'reference' }),
+          changeReferenceToId.bind(this, { modelName: 'Account', parentProperty: 'account', childIdentifier: 'reference' }),
           createSubscription
         ],
         only: ['create', 'update'] },
-        { middlewares: [helpers.populateProperties.bind(this, { modelName: 'user', propertyName: 'account' })], only: ['read'] }
+        { middlewares: [populateProperties.bind(this, { modelName: 'user', propertyName: 'account' })], only: ['read'] }
       ],
       endResponseInAction: false,
       afterActions: [
         { middlewares: [addPlans, addServices, addCachingKey], only: ['read'] },
-        { middlewares: [helpers.sendRequestResponse] }
+        { middlewares: [sendRequestResponse] }
       ]
     })
   )

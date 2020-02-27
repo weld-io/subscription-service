@@ -8,12 +8,13 @@
 
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
-const helpers = require('../config/helpers')
+
+const { getUniqueSlugFromCollection, stripIdsFromRet } = require('../config/helpers')
 
 // -----------
 
 // const showOnlyActiveSubscriptions = account => {
-//   account.subscriptions = _.filter(account.subscriptions, helpers.isSubscriptionActive)
+//   account.subscriptions = _.filter(account.subscriptions, isSubscriptionActive)
 // }
 
 // -----------
@@ -51,7 +52,7 @@ const AccountSchema = new Schema({
   toJSON: {
     transform: function (doc, ret, options) {
       // showOnlyActiveSubscriptions(ret); // this is handled in User.getSubscriptionPlans now
-      helpers.stripIdsFromRet(doc, ret, options)
+      stripIdsFromRet(doc, ret, options)
     }
   }
 })
@@ -59,7 +60,7 @@ const AccountSchema = new Schema({
 // Set reference/slug
 AccountSchema.pre('validate', function (next) {
   const slugSuggestion = this.reference || this.name || this.email
-  helpers.getUniqueSlugFromCollection('Account', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+  getUniqueSlugFromCollection('Account', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
     this.reference = uniqueSlug
     next()
   })

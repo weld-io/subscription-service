@@ -6,11 +6,11 @@
 
 'use strict'
 
-const _ = require('lodash')
+const { forEach, isEmpty, round, sortBy } = require('lodash')
 const express = require('express')
 const mongooseCrudify = require('mongoose-crudify')
 
-const helpers = require('../../config/helpers')
+const { applyToAll, arrayToCollection, changeReferenceToId, populateProperties, sendRequestResponse, toJsonIfNeeded } = require('../../config/helpers')
 const Plan = require('mongoose').model('Plan')
 
 // Private functions
@@ -19,7 +19,7 @@ const identifyingKey = 'reference'
 
 const listPlans = (req, res, next) => {
   let query = { isAvailable: { $ne: false } }
-  if (!_.isEmpty(req.query.tag)) {
+  if (!isEmpty(req.query.tag)) {
     query.tags = req.query.tag
   }
   const sorting = { position: 1 }
@@ -33,32 +33,32 @@ const listPlans = (req, res, next) => {
 
 const servicesAsCollection = function (req, res, next) {
   const convertServices = plan => {
-    plan = helpers.toJsonIfNeeded(plan)
-    plan.services = helpers.arrayToCollection(plan.services)
+    plan = toJsonIfNeeded(plan)
+    plan.services = arrayToCollection(plan.services)
     return plan
   }
 
-  req.crudify.result = helpers.applyToAll(convertServices, req.crudify.result)
+  req.crudify.result = applyToAll(convertServices, req.crudify.result)
   next()
 }
 
 const addUsersActivePlan = function (req, res, next) {
   const checkActivePlan = plan => {
-    plan = helpers.toJsonIfNeeded(plan)
+    plan = toJsonIfNeeded(plan)
     plan.isActive = false // TODO: replace with user->account->subscriptions->plan check, using req.user.d.uid
     return plan
   }
 
-  req.crudify.result = helpers.applyToAll(checkActivePlan, req.crudify.result)
+  req.crudify.result = applyToAll(checkActivePlan, req.crudify.result)
   next()
 }
 
 const showCorrectVAT = function (req, res, next) {
-  req.crudify.result = helpers.toJsonIfNeeded(req.crudify.result)
+  req.crudify.result = toJsonIfNeeded(req.crudify.result)
 
   const vatPercent = (parseFloat(process.env.VAT_PERCENT) || 20) / 100
 
-  const calculateVatAmount = (amount, percent, isIncluded, userPaysVAT) => _.round(
+  const calculateVatAmount = (amount, percent, isIncluded, userPaysVAT) => round(
     userPaysVAT
       ? isIncluded
         ? amount * percent /* Just % of AmountWith */
@@ -66,7 +66,7 @@ const showCorrectVAT = function (req, res, next) {
       : 0 /* No VAT if user doesn't pay VAT */
     , 3)
 
-  const calculatePriceAmount = (amount, percent, includedInPrice, userPaysVAT) => _.round(
+  const calculatePriceAmount = (amount, percent, includedInPrice, userPaysVAT) => round(
     userPaysVAT
       ? includedInPrice
         ? amount /* Amount is included, and that's what User should see */
@@ -77,9 +77,9 @@ const showCorrectVAT = function (req, res, next) {
     , 3)
 
   const calculatePlanVAT = plan => {
-    plan = helpers.toJsonIfNeeded(plan)
+    plan = toJsonIfNeeded(plan)
     plan.vat = {}
-    _.forEach(plan.price, (amount, timeUnit) => {
+    forEach(plan.price, (amount, timeUnit) => {
       if (['year', 'month', 'once'].includes(timeUnit)) {
         plan.vat[timeUnit] = calculateVatAmount(amount, vatPercent, plan.price.vatIncluded, (req.query.includeVAT !== 'false'))
         plan.price[timeUnit] = calculatePriceAmount(amount, vatPercent, plan.price.vatIncluded, (req.query.includeVAT !== 'false'))
@@ -89,13 +89,13 @@ const showCorrectVAT = function (req, res, next) {
     return plan
   }
 
-  req.crudify.result = helpers.applyToAll(calculatePlanVAT, req.crudify.result)
+  req.crudify.result = applyToAll(calculatePlanVAT, req.crudify.result)
   next()
 }
 
 const sortByPosition = function (req, res, next) {
-  req.crudify.result = helpers.toJsonIfNeeded(req.crudify.result)
-  req.crudify.result = _.sortBy(req.crudify.result, ['position'])
+  req.crudify.result = toJsonIfNeeded(req.crudify.result)
+  req.crudify.result = sortBy(req.crudify.result, ['position'])
   next()
 }
 
@@ -119,8 +119,8 @@ module.exports = function (app, config) {
       Model: Plan,
       identifyingKey: identifyingKey,
       beforeActions: [
-        { middlewares: [helpers.changeReferenceToId.bind(this, { modelName: 'Service', parentProperty: 'services', childIdentifier: 'reference' })], only: ['create'] },
-        { middlewares: [helpers.populateProperties.bind(this, { modelName: 'plan', propertyName: 'services' })], only: ['read'] }
+        { middlewares: [changeReferenceToId.bind(this, { modelName: 'Service', parentProperty: 'services', childIdentifier: 'reference' })], only: ['create'] },
+        { middlewares: [populateProperties.bind(this, { modelName: 'plan', propertyName: 'services' })], only: ['read'] }
       ],
       actions: {
         // override list
@@ -131,7 +131,7 @@ module.exports = function (app, config) {
         { middlewares: [sortByPosition], only: ['list'] },
         { middlewares: [showCorrectVAT, addUsersActivePlan], only: ['list', 'read'] },
         { middlewares: [servicesAsCollection], only: ['read'] }, // see also populateProperties above
-        { middlewares: [helpers.sendRequestResponse] }
+        { middlewares: [sendRequestResponse] }
       ]
     })
   )

@@ -1,6 +1,6 @@
 'use strict'
 
-const _ = require('lodash')
+const { findIndex, get, isObjectLike, keys, map, mapValues, mixin, reduce } = require('lodash')
 const async = require('async')
 const mongoose = require('mongoose')
 
@@ -12,7 +12,7 @@ module.exports.specify = function (obj) {
   const getValueDescription = function (val) {
     const objectType = Object.prototype.toString.call(val).replace('[object ', '').replace(']', '')
     switch (objectType) {
-      case 'Object': return '{' + _.keys(val).slice(0, 7).join() + '}'
+      case 'Object': return '{' + keys(val).slice(0, 7).join() + '}'
       case 'String': return val.slice(0, 50)
       case 'Array': return 'Array[' + val.length + ']'
       case 'Function':
@@ -21,7 +21,7 @@ module.exports.specify = function (obj) {
       default: return objectType + (':' + val).slice(0, 50)
     }
   }
-  return _.isObjectLike(obj) ? _.mapValues(obj, val => getValueDescription(val)) : getValueDescription(obj)
+  return isObjectLike(obj) ? mapValues(obj, val => getValueDescription(val)) : getValueDescription(obj)
 }
 
 module.exports.toSlug = function (str, removeInternationalChars) {
@@ -67,9 +67,9 @@ module.exports.getUniqueSlugFromCollection = function (collectionName, keyField 
   let searchQuery = {}
   searchQuery[keyField] = new RegExp('^' + newWordSlug) // begins with
   collection.find(searchQuery).exec((err, docs) => {
-    const existingSlugsArray = _.map(docs, keyField)
+    const existingSlugsArray = map(docs, keyField)
     const { documentId } = options
-    if (documentId) options.newWordsPositionInArray = _.findIndex(docs, doc => doc._id.toString() === documentId.toString())
+    if (documentId) options.newWordsPositionInArray = findIndex(docs, doc => doc._id.toString() === documentId.toString())
     const uniqueSlug = module.exports.getUniqueSlug(existingSlugsArray, newWordSlug, options)
     cb(err, uniqueSlug)
   })
@@ -81,12 +81,12 @@ module.exports.toJsonIfNeeded = obj => {
 }
 
 // [{ reference: foo, ... }, { reference: bar, ... }] -> { foo: ..., bar: ... }
-module.exports.arrayToCollection = (array, keyField = 'reference') => _.reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection }, {})
-_.mixin({ 'arrayToCollection': module.exports.arrayToCollection })
+module.exports.arrayToCollection = (array, keyField = 'reference') => reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection }, {})
+mixin({ 'arrayToCollection': module.exports.arrayToCollection })
 
 // applyToAll(func, obj1) or applyToAll(func, [obj1, obj2, ...])
-module.exports.applyToAll = (func, objectOrArray) => objectOrArray.constructor === Array ? _.map(objectOrArray, func) : func(objectOrArray)
-_.mixin({ 'applyToAll': module.exports.applyToAll })
+module.exports.applyToAll = (func, objectOrArray) => objectOrArray.constructor === Array ? map(objectOrArray, func) : func(objectOrArray)
+mixin({ 'applyToAll': module.exports.applyToAll })
 module.exports.applyToAllAsync = (func, objectOrArray, cbWhenDone) => async.eachOfSeries((objectOrArray.constructor === Array ? objectOrArray : [objectOrArray]), func, cbWhenDone)
 
 const getErrorCode = (err, results) => err
@@ -102,7 +102,7 @@ module.exports.sendResponse = function (err, results, callback) {
   const errorCode = getErrorCode(err, results)
   // console.log('sendResponse', errorCode, err, results, typeof(callback));
   if (errorCode !== 200) {
-    return this.status(errorCode).send({ code: errorCode, message: _.get(err, 'message'), error: err })
+    return this.status(errorCode).send({ code: errorCode, message: get(err, 'message'), error: err })
   } else {
     if (typeof (callback) === 'function') {
       callback(results)
@@ -134,9 +134,9 @@ module.exports.processAndRespond = async (res, promise) => {
 }
 
 module.exports.checkIfAuthorizedUser = function (reqPropertyName = 'params.reference', req, res, next) {
-  const userReference = _.get(req, reqPropertyName)
-  const jwtUserId = _.get(req, 'user.d.uid')
-  const isAdmin = _.get(req, 'user.d.role') === 'admin'
+  const userReference = get(req, reqPropertyName)
+  const jwtUserId = get(req, 'user.d.uid')
+  const isAdmin = get(req, 'user.d.role') === 'admin'
   if (userReference === jwtUserId || isAdmin || process.env.DISABLE_JWT === 'true') {
     next()
   } else {
@@ -165,19 +165,19 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
     '[object String]': {
       lookupAction: 'find',
       setSearchQuery: ({ searchQuery, childIdentifier, req }) => { searchQuery[childIdentifier] = req.body[parentProperty]; return searchQuery },
-      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = _.get(results, '0._id'); return req.body }
+      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = get(results, '0._id'); return req.body }
     },
     // Array: array of identifiers
     '[object Array]': {
       lookupAction: 'find',
       setSearchQuery: ({ searchQuery, childIdentifier, req }) => { searchQuery[childIdentifier] = { $in: req.body[parentProperty] }; return searchQuery },
-      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = _.map(results, '_id'); return req.body }
+      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = map(results, '_id'); return req.body }
     },
     // Object: create new child object, e.g. create User and Account in one request
     '[object Object]': {
       lookupAction: 'create',
       setSearchQuery: ({ searchQuery, childIdentifier, req }) => { Object.assign(searchQuery, req.body[parentProperty]); return searchQuery },
-      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = _.get(results, '_id'); return req.body }
+      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = get(results, '_id'); return req.body }
     }
   }
   const parentType = Object.prototype.toString.call(req.body[parentProperty])
