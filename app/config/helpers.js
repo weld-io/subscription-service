@@ -89,6 +89,23 @@ module.exports.applyToAll = (func, objectOrArray) => objectOrArray.constructor =
 mixin({ 'applyToAll': module.exports.applyToAll })
 module.exports.applyToAllAsync = (func, objectOrArray, cbWhenDone) => async.eachOfSeries((objectOrArray.constructor === Array ? objectOrArray : [objectOrArray]), func, cbWhenDone)
 
+// ----- REST return -----
+
+// handleRequest is the new way
+
+/** handleRequest(async () => {...}, { req, res }) */
+module.exports.handleRequest = async (actionFunction, { req, res }) => {
+  try {
+    await actionFunction(req, res)
+  } catch (err) {
+    const message = err.message.split(':')[0]
+    const status = err.message.split(':')[1] || 500
+    console.error(`Error ${status}: ${message}`)
+    res.status(status)
+    res.json({ message, status })
+  }
+}
+
 const getErrorCode = (err, results) => err
   ? err.statusCode || 400
   : (results === undefined || results === null)
@@ -132,6 +149,8 @@ module.exports.processAndRespond = async (res, promise) => {
     res.json(response)
   }
 }
+
+// ----- Authorization -----
 
 module.exports.checkIfAuthorizedUser = function (reqPropertyName = 'params.reference', req, res, next) {
   const userReference = get(req, reqPropertyName)

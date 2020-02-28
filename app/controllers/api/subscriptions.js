@@ -11,7 +11,7 @@ const async = require('async')
 const express = require('express')
 const fetch = require('node-fetch')
 
-const { changeReferenceToId, checkIfAuthorizedUser, dateIn1Month, dateIn1Year, getCacheProvider, getChildObjects, getDateExpires, getPaymentProvider, isSubscriptionActive, processAndRespond, sendResponse, toJsonIfNeeded } = require('../../config/helpers')
+const { changeReferenceToId, checkIfAuthorizedUser, dateIn1Month, dateIn1Year, getCacheProvider, getChildObjects, getDateExpires, getPaymentProvider, handleRequest, isSubscriptionActive, processAndRespond, sendResponse, toJsonIfNeeded } = require('../../config/helpers')
 
 const Account = require('mongoose').model('Account')
 const User = require('mongoose').model('User')
@@ -47,14 +47,11 @@ const getAccount = async params => {
 }
 
 const listSubscriptions = function (req, res, next) {
-  processAndRespond(res, new Promise(async (resolve, reject) => {
-    try {
-      const account = await getAccount(req.params)
-      resolve(account.subscriptions)
-    } catch (err) {
-      reject(err)
-    }
-  }))
+  handleRequest(async () => {
+    const account = await getAccount(req.params)
+    if (!account) throw new Error(`Account not found:404`)
+    res.json(account.subscriptions)
+  }, { req, res })
 }
 
 const readSubscription = function (req, res, next) {
@@ -159,7 +156,7 @@ const createSubscription = function (req, res, next) {
     }
   }
 
-  const sendResponse = function (err, results) {
+  const sendTheResponse = function (err, results) {
     sendResponse.call(res, err, get(results, 'account.subscriptions'))
   }
 
@@ -171,7 +168,7 @@ const createSubscription = function (req, res, next) {
     findCurrentActiveSubscriptions,
     createPaymentProviderSubscription
   ],
-  sendResponse
+  sendTheResponse
   )
 }
 
@@ -198,7 +195,7 @@ const updateSubscription = function (req, res, next) {
     account.save(cb)
   }
 
-  const sendResponse = function (err, account) {
+  const sendTheResponse = function (err, account) {
     cacheProvider.purgeContentByKey(account.reference)
     sendResponse.call(res, err, get(account, 'subscriptions.' + getSubscriptionIndex(account)))
   }
@@ -208,7 +205,7 @@ const updateSubscription = function (req, res, next) {
     updatePaymentProviderSubscription,
     updateSubscription
   ],
-  sendResponse
+  sendTheResponse
   )
 }
 
