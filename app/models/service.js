@@ -9,7 +9,7 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-const { getUniqueSlugFromCollection, stripIdsFromRet } = require('../config/helpers')
+const { getUniqueSlugFromCollection, stripIdsFromRet } = require('../lib/helpers')
 
 const ServiceSchema = new Schema({
   reference: { type: String, unique: true, required: true, sparse: true },

@@ -10,7 +10,7 @@ const { clone, get, map } = require('lodash')
 const async = require('async')
 const mongooseCrudify = require('mongoose-crudify')
 
-const { changeReferenceToId, checkIfAuthorizedUser, getCacheProvider, getDateExpires, populateProperties, sendRequestResponse, toJsonIfNeeded } = require('../../config/helpers')
+const { changeReferenceToId, checkIfAuthorizedUser, getCacheProvider, getDateExpires, populateProperties, sendRequestResponse, toJsonIfNeeded } = require('../../lib/helpers')
 const User = require('mongoose').model('User')
 const Account = require('mongoose').model('Account')
 const Plan = require('mongoose').model('Plan')

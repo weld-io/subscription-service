@@ -10,7 +10,7 @@ const { forEach, isEmpty, round, sortBy } = require('lodash')
 const express = require('express')
 const mongooseCrudify = require('mongoose-crudify')
 
-const { applyToAll, arrayToCollection, changeReferenceToId, populateProperties, sendRequestResponse, toJsonIfNeeded } = require('../../config/helpers')
+const { applyToAll, arrayToCollection, changeReferenceToId, populateProperties, sendRequestResponse, toJsonIfNeeded } = require('../../lib/helpers')
 const Plan = require('mongoose').model('Plan')
 
 // Private functions

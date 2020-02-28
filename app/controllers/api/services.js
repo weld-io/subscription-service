@@ -8,7 +8,7 @@
 
 const mongooseCrudify = require('mongoose-crudify')
 
-const { sendRequestResponse } = require('../../config/helpers')
+const { sendRequestResponse } = require('../../lib/helpers')
 const Service = require('mongoose').model('Service')
 
 // Private functions

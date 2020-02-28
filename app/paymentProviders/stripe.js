@@ -11,7 +11,7 @@ const _ = require('lodash')
 var STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 var stripe = require('stripe')(STRIPE_SECRET_KEY)
 
-const helpers = require('../config/helpers')
+const helpers = require('../lib/helpers')
 const Account = require('mongoose').model('Account')
 
 // ----- Private functions -----

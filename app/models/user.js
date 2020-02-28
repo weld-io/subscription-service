@@ -10,7 +10,7 @@ const { chain, map, merge, omit } = require('lodash')
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-const helpers = require('../config/helpers')
+const helpers = require('../lib/helpers')
 const Plan = require('mongoose').model('Plan')
 
 // Consumable: e.g. projects, documents, domains

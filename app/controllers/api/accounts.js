@@ -9,7 +9,7 @@
 const { get } = require('lodash')
 const mongooseCrudify = require('mongoose-crudify')
 
-const { getCacheProvider, processAndRespond, sendRequestResponse } = require('../../config/helpers')
+const { getCacheProvider, processAndRespond, sendRequestResponse } = require('../../lib/helpers')
 const Account = require('mongoose').model('Account')
 const express = require('express')
 

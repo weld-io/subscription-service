@@ -8,7 +8,7 @@
 
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
-const { getUniqueSlugFromCollection } = require('../config/helpers')
+const { getUniqueSlugFromCollection } = require('../lib/helpers')
 
 // Consumable: e.g. projects, documents
 const Consumable = new Schema({

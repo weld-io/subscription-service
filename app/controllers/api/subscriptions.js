@@ -11,7 +11,21 @@ const async = require('async')
 const express = require('express')
 const fetch = require('node-fetch')
 
-const { changeReferenceToId, checkIfAuthorizedUser, dateIn1Month, dateIn1Year, getCacheProvider, getChildObjects, getDateExpires, getPaymentProvider, handleRequest, isSubscriptionActive, processAndRespond, sendResponse, toJsonIfNeeded } = require('../../config/helpers')
+const {
+  changeReferenceToId,
+  checkIfAuthorizedUser,
+  dateIn1Month,
+  dateIn1Year,
+  getCacheProvider,
+  getChildObjects,
+  getDateExpires,
+  getPaymentProvider,
+  handleRequest,
+  isSubscriptionActive,
+  processAndRespond,
+  sendResponse,
+  toJsonIfNeeded
+} = require('../../lib/helpers')
 
 const Account = require('mongoose').model('Account')
 const User = require('mongoose').model('User')
