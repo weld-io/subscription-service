@@ -177,49 +177,49 @@ module.exports.populateProperties = function ({ modelName, propertyName }, req, 
 // From reference to MongoDB _id (or multiple _id's)
 // E.g. user.account = 'my-company' --> user.account = '594e6f880ca23b37a4090fe0'
 // helpers.changeReferenceToId.bind(this, { modelName:'Service', parentProperty:'services', childIdentifier:'reference' })
-module.exports.changeReferenceToId = function ({ modelName, parentProperty, childIdentifier }, req, res, next) {
+module.exports.changeReferenceToId = function ({ modelName, parentProperty, childIdentifier }, { body }, res, next) {
   // Set up different behavior for different data types
   const propertyTypes = {
     // String: one identifier
     '[object String]': {
       lookupAction: 'find',
-      setSearchQuery: ({ searchQuery, childIdentifier, req }) => { searchQuery[childIdentifier] = req.body[parentProperty]; return searchQuery },
-      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = get(results, '0._id'); return req.body }
+      setSearchQuery: ({ searchQuery, childIdentifier, body }) => { searchQuery[childIdentifier] = body[parentProperty]; return searchQuery },
+      setResults: ({ results, parentProperty, body }) => { body[parentProperty] = get(results, '0._id'); return body }
     },
     // Array: array of identifiers
     '[object Array]': {
       lookupAction: 'find',
-      setSearchQuery: ({ searchQuery, childIdentifier, req }) => { searchQuery[childIdentifier] = { $in: req.body[parentProperty] }; return searchQuery },
-      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = map(results, '_id'); return req.body }
+      setSearchQuery: ({ searchQuery, childIdentifier, body }) => { searchQuery[childIdentifier] = { $in: body[parentProperty] }; return searchQuery },
+      setResults: ({ results, parentProperty, body }) => { body[parentProperty] = map(results, '_id'); return body }
     },
     // Object: create new child object, e.g. create User and Account in one request
     '[object Object]': {
       lookupAction: 'create',
-      setSearchQuery: ({ searchQuery, childIdentifier, req }) => { Object.assign(searchQuery, req.body[parentProperty]); return searchQuery },
-      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = get(results, '_id'); return req.body }
+      setSearchQuery: ({ searchQuery, childIdentifier, body }) => { Object.assign(searchQuery, body[parentProperty]); return searchQuery },
+      setResults: ({ results, parentProperty, body }) => { body[parentProperty] = get(results, '_id'); return body }
     }
   }
-  const parentType = Object.prototype.toString.call(req.body[parentProperty])
+  const parentType = Object.prototype.toString.call(body[parentProperty])
   if (propertyTypes[parentType]) {
     // Make query
     let searchQuery = {}
-    propertyTypes[parentType].setSearchQuery({ searchQuery, childIdentifier, req })
+    propertyTypes[parentType].setSearchQuery({ searchQuery, childIdentifier, body })
     // Do the find or create, depending on lookupAction
     const modelObj = mongoose.model(modelName)
     const cbAfterFindOrCreate = function (err, results) {
       if (!err && results) {
-        propertyTypes[parentType].setResults({ results, parentProperty, req })
+        propertyTypes[parentType].setResults({ results, parentProperty, body })
       } else if (!err) {
-        res.status(404)
-        err = modelName + '(s) not found: ' + req.body[parentProperty]
+        res && res.status(404)
+        err = modelName + '(s) not found: ' + body[parentProperty]
       }
-      next(err, results)
+      next && next(err, results)
     }
     propertyTypes[parentType].lookupAction === 'find'
       ? modelObj.find(searchQuery).lean().exec(cbAfterFindOrCreate)
       : modelObj.create(searchQuery, cbAfterFindOrCreate)
   } else {
-    next(`Property '${parentProperty}' not found or unknown type (${parentType})`)
+    next && next(`Property '${parentProperty}' not found or unknown type (${parentType})`)
   }
 }
 
