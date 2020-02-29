@@ -19,7 +19,17 @@
   "standard": {
     "parser": "babel-eslint",
     "ignore": [],
-    "globals": []
+    "globals": [
+      "beforeAll",
+      "beforeEach",
+      "afterAll",
+      "afterEach",
+      "describe",
+      "expect",
+      "it",
+      "jasmine",
+      "spyOn"
+    ]
   },
   "engines": {
     "node": "^10.13.0",
