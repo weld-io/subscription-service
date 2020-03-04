@@ -98,8 +98,8 @@ module.exports.handleRequest = async (actionFunction, { req, res }) => {
   try {
     await actionFunction(req, res)
   } catch (err) {
-    const message = err.message.split(':')[0]
-    const status = err.message.split(':')[1] || 500
+    const message = err.message.split(';')[0]
+    const status = err.message.split(';')[1] || 500
     console.error(`Error ${status}: ${message}`)
     res.status(status)
     res.json({ message, status })

@@ -6,23 +6,20 @@
 
 'use strict'
 
-const _ = require('lodash')
+const { chain, get, merge, set, some } = require('lodash')
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
-var STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
-var stripe = require('stripe')(STRIPE_SECRET_KEY)
-
-const helpers = require('../lib/helpers')
-const Account = require('mongoose').model('Account')
+const { isHexString } = require('../lib/helpers')
 
 // ----- Private functions -----
 
-const getStripeCustomerID = account => _.get(account, 'metadata.stripeCustomer')
-const getStripeSubscriptionID = sub => _.get(sub, 'metadata.stripeSubscription')
+const getStripeCustomerID = account => get(account, 'metadata.stripeCustomer')
+const getStripeSubscriptionID = sub => get(sub, 'metadata.stripeSubscription')
 
 const createStripeOptions = ({ user, account, subscription, payment }) => {
   // e.g. "enterprise_small_monthly"
   // TODO: Fix ugly hack with isHexString to determine if it's a new plan reference, or a plan._id
-  const stripePlanName = helpers.isHexString(subscription.plan) ? undefined : `${subscription.plan}_${subscription.billing}`
+  const stripePlanName = isHexString(subscription.plan) ? undefined : `${subscription.plan}_${subscription.billing}`
   return {
     source: payment.token,
     plan: stripePlanName,
@@ -32,10 +29,10 @@ const createStripeOptions = ({ user, account, subscription, payment }) => {
   }
 }
 
-const createStripeUserAndSubscription = function ({ user, account, subscription, payment }, callback) {
+const createStripeUserAndSubscription = ({ user, account, subscription, payment }, callback) => {
   let stripeCustomerObj = createStripeOptions({ user, account, subscription, payment })
   // Extra options for Create
-  _.merge(stripeCustomerObj, {
+  merge(stripeCustomerObj, {
     description: account.reference,
     email: account.email,
     metadata: {
@@ -50,9 +47,9 @@ const createStripeUserAndSubscription = function ({ user, account, subscription,
       if (stripeErr) {
         callback(stripeErr)
       } else {
-        _.set(account, 'metadata.stripeCustomer', _.get(stripeCustomer, 'id'))
+        set(account, 'metadata.stripeCustomer', get(stripeCustomer, 'id'))
         account.markModified('metadata')
-        _.set(subscription, 'metadata.stripeSubscription', _.get(stripeCustomer, 'subscriptions.data.0.id'))
+        set(subscription, 'metadata.stripeSubscription', get(stripeCustomer, 'subscriptions.data.0.id'))
         callback(null, { user, account, subscription })
       }
     }
@@ -67,7 +64,7 @@ const createStripeSubscription = function ({ user, account, subscription, paymen
     if (stripeErr) {
       callback(stripeErr)
     } else {
-      _.set(subscription, 'metadata.stripeSubscription', _.get(stripeSubscription, 'id'))
+      set(subscription, 'metadata.stripeSubscription', get(stripeSubscription, 'id'))
       callback(null, { user, account, subscription })
     }
   }
@@ -76,67 +73,70 @@ const createStripeSubscription = function ({ user, account, subscription, paymen
   stripe.customers.createSubscription(stripeCustomerId, stripeSubscriptionObj, whenDone)
 }
 
-const updateStripeSubscription = function ({ user, account, subscription, payment }, callback) {
+// ----- API methods -----
+
+// CREATE
+const createSubscription = ({ user, account, subscription, payment }) => new Promise(async (resolve, reject) => {
+  // NOTE: has() doesn't work on Mongoose objects, but get() does.
+  if (get(account, 'metadata.stripeCustomer')) {
+    createStripeSubscription({ user, account, subscription, payment }, (err, data) => err ? reject(err) : resolve(data))
+  } else {
+    createStripeUserAndSubscription({ user, account, subscription, payment }, (err, data) => err ? reject(err) : resolve(data))
+  }
+})
+
+const updateSubscription = async ({ user, account, subscription, payment }) => new Promise(async (resolve, reject) => {
   const stripeCustomerId = getStripeCustomerID(account)
   const stripeSubscriptionId = getStripeSubscriptionID(subscription)
   const stripeSubscriptionObj = createStripeOptions({ user, account, subscription, payment })
 
   const whenDone = function (stripeErr, stripeSubscription) {
     if (stripeErr) {
-      callback(stripeErr)
+      reject(stripeErr)
     } else {
-      _.set(subscription, 'metadata.stripeSubscription', _.get(stripeSubscription, 'id'))
-      callback(null, { user, account, subscription })
+      set(subscription, 'metadata.stripeSubscription', get(stripeSubscription, 'id'))
+      resolve({ user, account, subscription })
     }
   }
 
   // Call Stripe API
-  if (stripeSubscriptionId) { stripe.customers.updateSubscription(stripeCustomerId, stripeSubscriptionId, stripeSubscriptionObj, whenDone) } else { stripe.customers.createSubscription(stripeCustomerId, stripeSubscriptionObj, whenDone) }
-}
-
-// API methods
-
-// CREATE
-const createSubscription = function ({ user, account, subscription, payment }, callback) {
-  // NOTE: _.has() doesn't work on Mongoose objects, but _.get() does.
-  if (_.get(account, 'metadata.stripeCustomer')) {
-    createStripeSubscription({ user, account, subscription, payment }, callback)
+  if (stripeSubscriptionId) {
+    stripe.customers.updateSubscription(stripeCustomerId, stripeSubscriptionId, stripeSubscriptionObj, whenDone)
   } else {
-    createStripeUserAndSubscription({ user, account, subscription, payment }, callback)
+    stripe.customers.createSubscription(stripeCustomerId, stripeSubscriptionObj, whenDone)
   }
-}
+})
 
 // DELETE
-const deleteSubscription = function (subscription, callback) {
+const deleteSubscription = (subscription) => new Promise(async (resolve, reject) => {
+  resolve('a value')
   const stripeSubscriptionId = getStripeSubscriptionID(subscription)
   if (stripeSubscriptionId) {
-    stripe.subscriptions.del(stripeSubscriptionId, (stripeErr, stripeSubscription) => {
-      if (stripeErr) console.log(`deleteSubscription: ${stripeErr}`)
-      if (callback) callback(stripeErr, { subscription: stripeSubscription })
-    })
+    stripe.subscriptions.del(stripeSubscriptionId, (err, stripeSubscription) => err ? reject(err) : resolve(stripeSubscription))
   } else {
-    if (callback) callback()
+    reject(new Error('No stripeSubscriptionId'))
   }
-}
+})
 
 // Webhook for renewal
 const receiveRenewSubscription = function (req, callback) {
-  const webhookType = _.get(req, 'body.type')
-  const stripeCustomerId = _.get(req, 'body.data.object.customer')
-  const stripeSubscriptionId = _.get(req, 'body.data.object.subscription')
+  const webhookType = get(req, 'body.type')
+  const stripeCustomerId = get(req, 'body.data.object.customer')
+  const stripeSubscriptionId = get(req, 'body.data.object.subscription')
   console.log(`Stripe "${webhookType}" webhook received`)
   if (webhookType === 'invoice.payment_succeeded' && stripeCustomerId) {
-    const lineItems = _.get(req, 'body.data.object.lines.data')
+    const lineItems = get(req, 'body.data.object.lines.data')
     // If contains 'year', then extend a year etc
-    const interval = _.some(lineItems, { plan: { interval: 'year' } }) ? 'year' : 'month'
+    const interval = some(lineItems, { plan: { interval: 'year' } }) ? 'year' : 'month'
     // TODO: use interval_count from Stripe
     const intervalCount = 1
     console.log(`Stripe "invoice.payment_succeeded" webhook for customer ${stripeCustomerId}, subscription ${stripeSubscriptionId}, extend ${intervalCount} ${interval}(s)`)
     // Look up Account and Subscriptions in database
     const query = { 'metadata.stripeCustomer': stripeCustomerId }
+    const Account = require('mongoose').model('Account')
     Account.findOne(query).exec((accountErr, account) => {
       if (!accountErr && account) {
-        const subscriptions = _.chain(account.subscriptions).filter(sub => _.get(sub, 'metadata.stripeSubscription') === stripeSubscriptionId).value()
+        const subscriptions = chain(account.subscriptions).filter(sub => get(sub, 'metadata.stripeSubscription') === stripeSubscriptionId).value()
         callback(null, { account, subscriptions, interval, intervalCount })
       } else {
         callback(new Error(`Account not found: ${stripeCustomerId}`))
@@ -155,13 +155,13 @@ module.exports = {
   // and callbacks have signature `callback(error, { payload1, ... })`
 
   // CRUD operations
-  createSubscription: createSubscription,
-  updateSubscription: updateStripeSubscription,
-  deleteSubscription: deleteSubscription,
+  createSubscription,
+  updateSubscription,
+  deleteSubscription,
 
   // receiveRenewSubscription(req, callback)
   //   callback(err, { account, subscriptions, interval, intervalCount })
   //   Payload in req: https://stripe.com/docs/api#invoice_object
-  receiveRenewSubscription: receiveRenewSubscription
+  receiveRenewSubscription
 
 }

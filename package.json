@@ -8,10 +8,10 @@
   "scripts": {
     "dev": "nodemon app/server.js",
     "start": "node app/server.js",
-    "test": "echo 'Running Tape API tests...\n' && yarn test-tape1",
-    "test-tape1": "export DISABLE_JWT=true && node test/users.js && node test/subscriptions.js && node test/app.js",
-    "test-tape2": "DISABLE_JWT=true tape test/**/*.js",
-    "test-unit": "jasmine --config=test/jasmine.json",
+    "test": "echo 'Running Tape API tests...\n' && yarn tape1",
+    "tape1": "export DISABLE_JWT=true && node test/users.js && node test/subscriptions.js && node test/app.js",
+    "tape2": "DISABLE_JWT=true tape test/**/*.js",
+    "unit": "jasmine --config=test/jasmine.json",
     "lint": "standard",
     "fix": "standard --fix"
   },
