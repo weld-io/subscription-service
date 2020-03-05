@@ -48,7 +48,7 @@
     "lodash": "^4.17.4",
     "mongodb": "^2.2.29",
     "mongoose": "^4.10.8",
-    "mongoose-crudify": "git+https://github.com/tomsoderlund/mongoose-crudify.git",
+    "mongoose-crudify": "tomsoderlund/mongoose-crudify#error-metadata",
     "morgan": "^1.8.2",
     "node-fetch": "^2.3.0",
     "resource-router-middleware": "^0.7.0",

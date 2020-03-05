@@ -2437,9 +2437,9 @@ mongodb@^2.2.29:
     mongodb-core "2.1.20"
     readable-stream "2.2.7"
 
-"mongoose-crudify@git+https://github.com/tomsoderlund/mongoose-crudify.git":
+mongoose-crudify@tomsoderlund/mongoose-crudify#error-metadata:
   version "0.2.0"
-  resolved "git+https://github.com/tomsoderlund/mongoose-crudify.git#da1ec8b26a2934d223a5cf72639acf317121d6a5"
+  resolved "https://codeload.github.com/tomsoderlund/mongoose-crudify/tar.gz/7da5042b34b9b1414d8e124ff39da3a65b8ef87c"
   dependencies:
     lodash "^4.17.4"
 
