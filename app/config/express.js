@@ -35,11 +35,10 @@ module.exports = function (app, config) {
 
   // Error: others
   app.use(function (err, req, res, next) {
-    res.status(err.status || 500)
-    res.json({
-      message: err.message,
-      error: err,
-      title: 'error'
-    })
+    const reference = `E${Math.round(1000 * Math.random())}`
+    const { status = 500, message } = err
+    console.error(`[${reference}] Error ${status}: “${message}” –`, err)
+    res.status(status)
+    res.json({ status, message, reference })
   })
 }
