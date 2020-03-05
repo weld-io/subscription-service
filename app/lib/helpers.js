@@ -98,11 +98,12 @@ module.exports.handleRequest = async (actionFunction, { req, res }) => {
   try {
     await actionFunction(req, res)
   } catch (err) {
+    const reference = `E${Math.round(1000 * Math.random())}`
     const message = err.message.split(';')[0]
     const status = err.message.split(';')[1] || 500
-    console.error(`Error ${status}: ${message}`)
-    res.status(status)
-    res.json({ message, status })
+    console.error(`[${reference}] Error ${status}: “${message}” –`, err)
+    if (!isNaN(status)) res.status(status)
+    res.json({ status, message, reference })
   }
 }
 

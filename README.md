@@ -322,10 +322,9 @@ Built on Node.js, Express, MongoDB, [mongoose-crudify](https://github.com/ryo718
 
 Stripe is currently the only payment provider supported, but the idea is that it should be easy to add more payment provider integrations to `/app/paymentProviders` and change the `PAYMENT_PROVIDER` environment variable.
 
-* Stripe plan references are currently derived from Plan reference + billing period, e.g. `basicplan_month`.
+* Stripe plan **ID**’s (“This will identify this plan in the API”) are currently derived from Plan reference + billing period, e.g. `basicplan_month`.
 * Stripe customer ID is saved in Accounts `metadata.stripeCustomer`.
 * Stripe subscription ID is saved in Subscriptions `metadata.stripeSubscription`.
-
 
 ### Stripe example webhook
 

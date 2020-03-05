@@ -60,10 +60,12 @@ const createSubscription = function (req, res, next) {
     const oldPlans = await getPlansForOldSubscriptions(account)
     const subscriptionToUpdate = findCurrentActiveSubscriptions({ account, oldPlans, newPlan })
     // Use ?ignorePaymentProvider=true on URL to avoid Stripe subscriptions being created, e.g. for migration purposes
-    const paymentResults = !has(req, 'query.ignorePaymentProvider')
+    const usePaymentProvider = !has(req, 'query.ignorePaymentProvider')
+    const paymentResults = usePaymentProvider
       ? await createOrUpdatePaymentProviderSubscription({ user, account, subscriptionToUpdate, newSubscription, token: req.body.token })
       : {}
-    const newSubscriptions = await updateSubscriptionOnAccount({ account, subscription: subscriptionToUpdate, newPlan, dateExpires: getDateExpires(req.body), isNew: paymentResults.isNew })
+    const isNew = usePaymentProvider ? paymentResults.isNew : true
+    const newSubscriptions = await updateSubscriptionOnAccount({ account, subscription: (subscriptionToUpdate || newSubscription), newPlan, dateExpires: getDateExpires(req.body), isNew })
     // cb(saveErr, { user, account: savedAccount, newSubscription: result.subscription })
     res.json(newSubscriptions)
   }, { req, res })
