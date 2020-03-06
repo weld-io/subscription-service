@@ -200,27 +200,28 @@ module.exports.changeReferenceToId = function ({ modelName, parentProperty, chil
       setResults: ({ results, parentProperty, body }) => { body[parentProperty] = get(results, '_id'); return body }
     }
   }
-  const parentType = Object.prototype.toString.call(body[parentProperty])
-  if (propertyTypes[parentType]) {
+  const parentPropertyType = Object.prototype.toString.call(body[parentProperty])
+  if (propertyTypes[parentPropertyType]) {
     // Make query
     let searchQuery = {}
-    propertyTypes[parentType].setSearchQuery({ searchQuery, childIdentifier, body })
+    propertyTypes[parentPropertyType].setSearchQuery({ searchQuery, childIdentifier, body })
     // Do the find or create, depending on lookupAction
     const modelObj = mongoose.model(modelName)
     const cbAfterFindOrCreate = function (err, results) {
       if (!err && results) {
-        propertyTypes[parentType].setResults({ results, parentProperty, body })
+        propertyTypes[parentPropertyType].setResults({ results, parentProperty, body })
       } else if (!err) {
         res && res.status(404)
         err = modelName + '(s) not found: ' + body[parentProperty]
       }
       next && next(err, results)
     }
-    propertyTypes[parentType].lookupAction === 'find'
+    propertyTypes[parentPropertyType].lookupAction === 'find'
       ? modelObj.find(searchQuery).lean().exec(cbAfterFindOrCreate)
       : modelObj.create(searchQuery, cbAfterFindOrCreate)
   } else {
-    next && next(`Property '${parentProperty}' not found or unknown type (${parentType})`)
+    // next && next(new Error(`Property '${parentProperty}' not found or unknown type (${parentPropertyType})`))
+    next && next()
   }
 }
 
