@@ -64,7 +64,7 @@ const showCorrectVAT = function (req, res, next) {
         ? amount * percent /* Just % of AmountWith */
         : amount / (1 - percent) - amount /* AmountWith - AmountWithout */
       : 0 /* No VAT if user doesn't pay VAT */
-    , 3)
+    , 2)
 
   const calculatePriceAmount = (amount, percent, includedInPrice, userPaysVAT) => round(
     userPaysVAT
@@ -74,7 +74,7 @@ const showCorrectVAT = function (req, res, next) {
       : includedInPrice
         ? amount * (1 - percent)
         : amount /* Amount is NOT included, and that's what User should see */
-    , 3)
+    , 2)
 
   const calculatePlanVAT = plan => {
     plan = toJsonIfNeeded(plan)
