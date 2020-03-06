@@ -10,7 +10,7 @@ const { chain, map, merge, omit } = require('lodash')
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-const helpers = require('../lib/helpers')
+const { arrayToCollection, getUniqueSlugFromCollection, isSubscriptionActive, stripIdsFromRet } = require('../lib/helpers')
 const Plan = require('mongoose').model('Plan')
 
 // Consumable: e.g. projects, documents, domains
@@ -31,7 +31,7 @@ const UserSchema = new Schema({
 {
   toJSON: {
     transform: function (doc, ret, options) {
-      helpers.stripIdsFromRet(doc, ret, options)
+      stripIdsFromRet(doc, ret, options)
     }
   }
 })
@@ -39,7 +39,7 @@ const UserSchema = new Schema({
 // Set reference/slug
 UserSchema.pre('validate', function (next) {
   const slugSuggestion = this.reference
-  helpers.getUniqueSlugFromCollection('Account', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+  getUniqueSlugFromCollection('Account', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
     this.reference = uniqueSlug
     next()
   })
@@ -51,7 +51,7 @@ UserSchema.methods.getAccounts = function (callback) {
 
 // TODO: move this so 'includeAllSubscriptions' filter is used on Account too
 UserSchema.methods.getSubscriptionPlans = function (options, callback) {
-  const filterFunction = options.includeAllSubscriptions ? () => true : helpers.isSubscriptionActive
+  const filterFunction = options.includeAllSubscriptions ? () => true : isSubscriptionActive
   const selectedSubscriptions = chain(this.account.subscriptions).filter(filterFunction).value()
   const planIds = map(selectedSubscriptions, 'plan')
   Plan.find({ '_id': { $in: planIds } }).exec((err, plans) => {
@@ -66,9 +66,10 @@ UserSchema.methods.getSubscriptionPlans = function (options, callback) {
 }
 
 UserSchema.methods.getServices = function (callback) {
-  const planIds = chain(this.account.subscriptions).filter(helpers.isSubscriptionActive).map('plan').value()
+  const planIds = chain(this.account.subscriptions).filter(isSubscriptionActive).map('plan').value()
   Plan.find({ '_id': { $in: planIds } }).populate('services').exec((err, plans) => {
-    const allServices = chain(plans).map('services').flatten().uniq().arrayToCollection().value()
+    console.log(`plans:`, plans, chain(plans).map('services'))
+    const allServices = arrayToCollection(chain(plans).map('services').flatten().uniq().value())
     callback(null, allServices)
   })
 }

@@ -36,7 +36,7 @@ module.exports = function (app, config) {
   // Error: others
   app.use(function (err, req, res, next) {
     const reference = `E${Math.round(1000 * Math.random())}`
-    const { status = 500, message, request } = err
+    const { status = 500, message, request = {} } = err
     if (request.method === 'GET' && request.path.search(/api\/users\/(.+)/) !== -1) {
       res.json({ message: 'user not found' })
     } else {
