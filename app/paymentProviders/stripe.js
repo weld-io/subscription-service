@@ -6,7 +6,7 @@
 
 'use strict'
 
-const { chain, get, merge, set, some } = require('lodash')
+const { chain, get, has, merge, pick, set, some } = require('lodash')
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 const { isHexString } = require('../lib/helpers')
@@ -16,79 +16,82 @@ const { isHexString } = require('../lib/helpers')
 const getStripeCustomerID = account => get(account, 'metadata.stripeCustomer')
 const getStripeSubscriptionID = sub => get(sub, 'metadata.stripeSubscription')
 
-const createStripeOptions = ({ user, account, subscription, payment }) => {
+// ----- Scaffolding -----
+
+const scaffoldStripeCustomer = ({ user, account, payment }) => ({
+  description: account.reference,
+  email: account.email,
+  metadata: {
+    user_id: user.reference
+  },
+  payment_method: payment.paymentMethod,
+  invoice_settings: {
+    default_payment_method: payment.paymentMethod
+  }
+})
+
+const scaffoldStripeSubscription = ({ stripeCustomerId, subscription, payment }) => {
   // e.g. "enterprise_small_monthly"
   // TODO: Fix ugly hack with isHexString to determine if it's a new plan reference, or a plan._id
-  const stripePlanName = isHexString(subscription.plan) ? undefined : `${subscription.plan}_${subscription.billing}`
+  const stripePlanName = isHexString(subscription.plan) ? undefined : `${subscription.plan}_${subscription.billing || 'month'}`
   return {
+    customer: stripeCustomerId,
+    // plan: stripePlanName,
+    items: [{ plan: stripePlanName }],
+    expand: ['latest_invoice.payment_intent'],
     source: payment.token,
-    plan: stripePlanName,
     coupon: subscription.discountCode,
     // quantity: subscription.quantity,
     tax_percent: payment.taxPercent
   }
 }
 
-const createStripeUserAndSubscription = ({ user, account, subscription, payment }, callback) => {
-  let stripeCustomerObj = createStripeOptions({ user, account, subscription, payment })
-  // Extra options for Create
-  merge(stripeCustomerObj, {
-    description: account.reference,
-    email: account.email,
-    metadata: {
-      user_id: user.reference
-    }
-  })
+// ----- Calling Stripe -----
 
+const createStripeCustomerAndSubscription = async ({ user, account, subscription, payment }) => {
+  const stripeCustomerObj = scaffoldStripeCustomer({ user, account, payment })
+  console.log(`stripeCustomerObj:`, stripeCustomerObj)
   // Call Stripe API
-  stripe.customers.create(
-    stripeCustomerObj,
-    function (stripeErr, stripeCustomer) {
-      if (stripeErr) {
-        callback(stripeErr)
-      } else {
-        set(account, 'metadata.stripeCustomer', get(stripeCustomer, 'id'))
-        account.markModified('metadata')
-        set(subscription, 'metadata.stripeSubscription', get(stripeCustomer, 'subscriptions.data.0.id'))
-        callback(null, { user, account, subscription })
-      }
-    }
-  )
+  const customerResults = await stripe.customers.create(stripeCustomerObj)
+  console.log(`stripe.customers.create:`, customerResults)
+  set(account, 'metadata.stripeCustomer', get(customerResults, 'id'))
+  account.markModified('metadata')
+  try {
+    await createStripeSubscription({ user, account, subscription, payment })
+    return { user, account, subscription }
+  } catch (error) {
+    console.warn(`Warning: ${error.message || error}`)
+    return { error, user, account, subscription }
+  }
 }
 
-const createStripeSubscription = function ({ user, account, subscription, payment }, callback) {
+const createStripeSubscription = async ({ user, account, subscription, payment }) => {
   const stripeCustomerId = getStripeCustomerID(account)
-  const stripeSubscriptionObj = createStripeOptions({ user, account, subscription, payment })
-
-  const whenDone = function (stripeErr, stripeSubscription) {
-    if (stripeErr) {
-      callback(stripeErr)
-    } else {
-      set(subscription, 'metadata.stripeSubscription', get(stripeSubscription, 'id'))
-      callback(null, { user, account, subscription })
-    }
-  }
-
+  const stripeSubscriptionObj = scaffoldStripeSubscription({ stripeCustomerId, subscription, payment })
   // Call Stripe API
-  stripe.customers.createSubscription(stripeCustomerId, stripeSubscriptionObj, whenDone)
+  const subscriptionResults = await stripe.subscriptions.create(stripeSubscriptionObj)
+  console.log(`stripe.subscriptions.create:`, subscriptionResults)
+  set(subscription, 'metadata.stripeSubscription', get(subscriptionResults, 'id'))
+  return { user, account, subscription }
 }
 
 // ----- API methods -----
 
 // CREATE
-const createSubscription = ({ user, account, subscription, payment }) => new Promise(async (resolve, reject) => {
-  // NOTE: has() doesn't work on Mongoose objects, but get() does.
+const createSubscription = ({ user, account, subscription, payment }) => {
+  // Note: has() doesn’t work on Mongoose objects, but get() does.
   if (get(account, 'metadata.stripeCustomer')) {
-    createStripeSubscription({ user, account, subscription, payment }, (err, data) => err ? reject(err) : resolve(data))
+    return createStripeSubscription({ user, account, subscription, payment })
   } else {
-    createStripeUserAndSubscription({ user, account, subscription, payment }, (err, data) => err ? reject(err) : resolve(data))
+    return createStripeCustomerAndSubscription({ user, account, subscription, payment })
   }
-})
+}
 
+// UPDATE
 const updateSubscription = async ({ user, account, subscription, payment }) => new Promise(async (resolve, reject) => {
   const stripeCustomerId = getStripeCustomerID(account)
   const stripeSubscriptionId = getStripeSubscriptionID(subscription)
-  const stripeSubscriptionObj = createStripeOptions({ user, account, subscription, payment })
+  const stripeSubscriptionObj = scaffoldStripeSubscription({ subscription, payment })
 
   const whenDone = function (stripeErr, stripeSubscription) {
     if (stripeErr) {
@@ -106,6 +109,21 @@ const updateSubscription = async ({ user, account, subscription, payment }) => n
     stripe.customers.createSubscription(stripeCustomerId, stripeSubscriptionObj, whenDone)
   }
 })
+
+const createOrUpdateSubscription = async ({ user, account, existingSubscription, newSubscription, payment }) => {
+  console.log(`createOrUpdateSubscription:`, { user, account, existingSubscription, newSubscription, payment })
+  if (!payment.paymentMethod) throw new Error(`No paymentMethod provided`)
+  // If existing subscription
+  if (has(existingSubscription, 'metadata.stripeSubscription') && has(account, 'metadata.stripeCustomer')) {
+    // Update existing
+    const updatedSubscription = merge({}, existingSubscription, pick(newSubscription, ['plan', 'billing']))
+    return updateSubscription({ user, account, subscription: updatedSubscription, payment }) // payment.taxPercent
+  } else {
+    // If NO existing subscription, create new
+    const paymentResults = await createSubscription({ user, account, subscription: newSubscription, payment }) // payment.taxPercent
+    return { ...paymentResults, isNew: true }
+  }
+}
 
 // DELETE
 const deleteSubscription = (subscription) => new Promise(async (resolve, reject) => {
@@ -157,11 +175,16 @@ module.exports = {
   // CRUD operations
   createSubscription,
   updateSubscription,
+  createOrUpdateSubscription,
   deleteSubscription,
 
   // receiveRenewSubscription(req, callback)
   //   callback(err, { account, subscriptions, interval, intervalCount })
   //   Payload in req: https://stripe.com/docs/api#invoice_object
-  receiveRenewSubscription
+  receiveRenewSubscription,
+
+  // Internal methods for testing
+  scaffoldStripeCustomer,
+  scaffoldStripeSubscription
 
 }

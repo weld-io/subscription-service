@@ -12,6 +12,7 @@ const {
   getDateExpires,
   handleRequest,
   processAndRespond,
+  getPaymentProvider,
   sendResponse
 } = require('../../lib/helpers')
 
@@ -22,7 +23,6 @@ const {
   getPlanForNewSubscription,
   getPlansForOldSubscriptions,
   findCurrentActiveSubscriptions,
-  createOrUpdatePaymentProviderSubscription,
   updatePaymentProviderSubscription,
   updateSubscriptionOnAccount,
   mergeAndUpdateSubscription,
@@ -58,14 +58,16 @@ const createSubscription = function (req, res, next) {
     const { newSubscription, user } = createSubscriptionObject(account, req)
     const newPlan = await getPlanForNewSubscription(newSubscription)
     const oldPlans = await getPlansForOldSubscriptions(account)
-    const subscriptionToUpdate = findCurrentActiveSubscriptions({ account, oldPlans, newPlan })
+    const existingSubscription = findCurrentActiveSubscriptions({ account, oldPlans, newPlan })
+
     // Use ?ignorePaymentProvider=true on URL to avoid Stripe subscriptions being created, e.g. for migration purposes
     const usePaymentProvider = !has(req, 'query.ignorePaymentProvider')
+    const payment = { token: req.body.token, paymentMethod: req.body.paymentMethod }
     const paymentResults = usePaymentProvider
-      ? await createOrUpdatePaymentProviderSubscription({ user, account, subscriptionToUpdate, newSubscription, token: req.body.token })
+      ? await getPaymentProvider().createOrUpdateSubscription({ user, account, existingSubscription, newSubscription, payment })
       : {}
     const isNew = usePaymentProvider ? paymentResults.isNew : true
-    const newSubscriptions = await updateSubscriptionOnAccount({ account, subscription: (subscriptionToUpdate || newSubscription), newPlan, dateExpires: getDateExpires(req.body), isNew })
+    const newSubscriptions = await updateSubscriptionOnAccount({ account, subscription: (existingSubscription || newSubscription), newPlan, dateExpires: getDateExpires(req.body), isNew })
     // cb(saveErr, { user, account: savedAccount, newSubscription: result.subscription })
     res.json(newSubscriptions)
   }, { req, res })
@@ -95,7 +97,7 @@ const deleteSubscription = function (req, res, next) {
         ) {
           sub.dateStopped = Date.now()
           subsStopped++
-          paymentProvider.deleteSubscription(sub, cb)
+          getPaymentProvider().deleteSubscription(sub, cb)
         } else {
           cb()
         }
@@ -110,7 +112,7 @@ const deleteSubscription = function (req, res, next) {
 }
 
 const renewSubscription = function (req, res, next) {
-  paymentProvider.receiveRenewSubscription(req, renewSubscriptionAndAccount)
+  getPaymentProvider().receiveRenewSubscription(req, renewSubscriptionAndAccount)
 }
 
 module.exports = function (app, config) {

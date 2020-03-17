@@ -22,6 +22,9 @@ const { closeDatabase } = require('../config/database')
 
 const IN_THE_FUTURE = new Date('2040-01-01')
 
+process.env.PAYMENT_PROVIDER = 'test'
+process.env.CACHE_PROVIDER = 'test'
+
 const DUMMY_USER = {
   account: {
     reference: 'tomorroworld',
@@ -274,12 +277,6 @@ describe('subscriptions.js', function () {
     const result = await updateSubscriptionOnAccount({ account, subscription: DUMMY_USER.account.subscriptions[0], newPlan: DUMMY_PLANS[0], dateExpires: IN_THE_FUTURE, isNew: true })
     // console.log(`updateSubscriptionOnAccount:`, result)
     expect(Object.keys(result[0])).toEqual(['metadata', 'dateExpires', '_id', 'dateCreated', 'billing', 'plan'])
-  })
-
-  it('should createOrUpdatePaymentProviderSubscription', async function () {
-    const result = await createOrUpdatePaymentProviderSubscription({ user, account, subscriptionToUpdate, newSubscription, token })
-    console.log(`createOrUpdatePaymentProviderSubscription:`, result)
-    expect(result).toEqual(true)
   })
 
   // it('should sendTheResponse', async function () {

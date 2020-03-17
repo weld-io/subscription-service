@@ -68,7 +68,6 @@ UserSchema.methods.getSubscriptionPlans = function (options, callback) {
 UserSchema.methods.getServices = function (callback) {
   const planIds = chain(this.account.subscriptions).filter(isSubscriptionActive).map('plan').value()
   Plan.find({ '_id': { $in: planIds } }).populate('services').exec((err, plans) => {
-    console.log(`plans:`, plans, chain(plans).map('services'))
     const allServices = arrayToCollection(chain(plans).map('services').flatten().uniq().value())
     callback(null, allServices)
   })

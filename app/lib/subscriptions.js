@@ -15,9 +15,6 @@ const {
 
 const DEFAULT_BILLING = 'month'
 
-const paymentProvider = getPaymentProvider()
-const cacheProvider = getCacheProvider()
-
 // ----- getAccount -----
 
 // getAccountThen = old version
@@ -102,7 +99,7 @@ const updateSubscriptionOnAccount = async function ({ account, subscription, new
 
 /*
 const updatePaymentProviderSubscription = function (account, cb) {
-  paymentProvider.updateSubscription(
+  getPaymentProvider().updateSubscription(
     {
       user: { reference: req.params.userReference },
       account,
@@ -113,20 +110,6 @@ const updatePaymentProviderSubscription = function (account, cb) {
   )
 }
 */
-
-const createOrUpdatePaymentProviderSubscription = async ({ user, account, subscriptionToUpdate, newSubscription, token }) => {
-  // If existing subscription
-  // TODO: rewrite so no specific Stripe references here
-  if (has(subscriptionToUpdate, 'metadata.stripeSubscription') && has(account, 'metadata.stripeCustomer')) {
-    // Update existing
-    const updatedSubscription = merge({}, subscriptionToUpdate, pick(newSubscription, ['plan', 'billing']))
-    return paymentProvider.updateSubscription({ user, account, subscription: updatedSubscription, payment: { token } }) // payment.taxPercent
-  } else {
-    // If NO existing subscription, create new
-    const paymentResults = await paymentProvider.createSubscription({ user, account, subscription: newSubscription, payment: { token } }) // payment.taxPercent
-    return { ...paymentResults, isNew: true }
-  }
-}
 
 // ----- updateSubscription -----
 
@@ -141,7 +124,7 @@ const mergeAndUpdateSubscription = function (user, account, subscription, cb) {
 }
 
 const sendTheResponse2 = function (err, account) {
-  cacheProvider.purgeContentByKey(account.reference)
+  getCacheProvider().purgeContentByKey(account.reference)
   sendResponse.call(res, err, get(account, 'subscriptions.' + getSubscriptionIndex(account)))
 }
 
@@ -182,7 +165,7 @@ const renewSubscriptionAndAccount = function (err, { account, subscriptions, int
       sub.dateExpires = interval === 'year' ? dateIn1Year() : dateIn1Month()
     })
     account.save()
-    cacheProvider.purgeContentByKey(account.reference)
+    getCacheProvider().purgeContentByKey(account.reference)
     const User = require('mongoose').model('User')
     User.find({ account: account._id }).exec((err, users) => {
       postOutboundRenewWebhook({ account, users, subscriptions, interval, intervalCount })
@@ -205,7 +188,6 @@ module.exports = {
   isSubscriptionWithoutAllowMultiple,
   getActiveSubscriptionsWithoutAllowMultiple,
   findCurrentActiveSubscriptions,
-  createOrUpdatePaymentProviderSubscription,
   updateSubscriptionOnAccount,
   getSubscriptionIndex,
   mergeAndUpdateSubscription,
