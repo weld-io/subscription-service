@@ -19,12 +19,6 @@ const { getUniqueSlugFromCollection, stripIdsFromRet } = require('../lib/helpers
 
 // -----------
 
-const Company = new Schema({
-  name: { type: String },
-  vatNumber: { type: String },
-  metadata: {} // for extra data
-})
-
 // Subscription to a Plan
 const Subscription = new Schema({
   reference: { type: String, unique: true, sparse: true }, // e.g. attached to certain consumable
@@ -41,8 +35,8 @@ const AccountSchema = new Schema({
   reference: { type: String, unique: true, required: true, sparse: true },
   name: { type: String },
   email: { type: String },
-  company: Company,
   countryCode: { type: String },
+  vatNumber: { type: String },
   dateCreated: { type: Date, default: Date.now },
   subscriptions: [Subscription],
   metadata: {} // for Stripe IDs etc
