@@ -21,6 +21,10 @@ const getStripeSubscriptionID = sub => get(sub, 'metadata.stripeSubscription')
 const scaffoldStripeCustomer = ({ user, account, payment }) => ({
   description: account.reference,
   email: account.email,
+  address: {
+    country: account.countryCode,
+    line1: account.name
+  },
   metadata: {
     user_id: user.reference
   },
@@ -51,9 +55,19 @@ const scaffoldStripeSubscription = ({ stripeCustomerId, subscription, payment })
 const createStripeCustomerAndSubscription = async ({ user, account, subscription, payment }) => {
   const stripeCustomerObj = scaffoldStripeCustomer({ user, account, payment })
   // Call Stripe API
-  const customerResults = await stripe.customers.create(stripeCustomerObj)
-  set(account, 'metadata.stripeCustomer', get(customerResults, 'id'))
+  const { id } = await stripe.customers.create(stripeCustomerObj)
+  set(account, 'metadata.stripeCustomer', id)
   account.markModified('metadata')
+  // Tax ID
+  if (account.vatNumber) {
+    try {
+      // TODO: support multiple TaxID types
+      await stripe.customers.createTaxId(id, { value: account.vatNumber, type: 'eu_vat' })
+    } catch (err) {
+      console.warn(`Tax/VAT ID not correct: ${err.message || err}`, account.name, account.vatNumber)
+    }
+  }
+  // Subscription
   try {
     await createStripeSubscription({ user, account, subscription, payment })
     return { user, account, subscription }
