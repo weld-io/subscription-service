@@ -79,10 +79,12 @@ const showCorrectVAT = function (req, res, next) {
   const calculatePlanVAT = plan => {
     plan = toJsonIfNeeded(plan)
     plan.vat = {}
+    const includeVAT = (req.query.includeVAT !== 'false')
     forEach(plan.price, (amount, timeUnit) => {
       if (['year', 'month', 'once'].includes(timeUnit)) {
-        plan.vat[timeUnit] = calculateVatAmount(amount, vatPercent, plan.price.vatIncluded, (req.query.includeVAT !== 'false'))
-        plan.price[timeUnit] = calculatePriceAmount(amount, vatPercent, plan.price.vatIncluded, (req.query.includeVAT !== 'false'))
+        plan.vat[timeUnit] = calculateVatAmount(amount, vatPercent, plan.price.vatIncluded, includeVAT)
+        plan.price[timeUnit] = calculatePriceAmount(amount, vatPercent, plan.price.vatIncluded, includeVAT)
+        plan.price.vatIncluded = includeVAT
       }
     })
     if (plan.price) plan.price.currency = plan.price.currency || '$'

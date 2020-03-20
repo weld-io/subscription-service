@@ -194,6 +194,10 @@ Returns:
 
 	curl -X GET http://localhost:3034/api/plans
 
+Options:
+
+- `includeVAT`: true or false
+
 #### Get plan info
 
 	curl -X GET http://localhost:3034/api/plans/:reference
@@ -206,10 +210,10 @@ Returns:
 		price: {
 			month: 149,
 			year: 1490,
-			once: 150000
+			once: 150000,
+			vatIncluded: true
 		},
 		vat: {
-			vatIncluded: true,
 			month: 15,
 			year: 149,
 			once: 15000,
