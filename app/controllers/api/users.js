@@ -52,6 +52,7 @@ const createSubscription = function (req, res, next) {
     // When all done
     function (err, results) {
       if (!err) {
+        if (!results.plan._id) next(new Error(`Plan not found: '${req.body.subscription.plan}'`))
         const subscription = clone(req.body.subscription)
         subscription.plan = results.plan._id
         subscription.dateExpires = getDateExpires(req.body.subscription)

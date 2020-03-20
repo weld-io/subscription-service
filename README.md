@@ -254,7 +254,7 @@ Partial update:
 
 By Account:
 
-	curl -X POST http://localhost:3034/api/accounts/:accountReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package", "billing": "year" }'
+	curl -X POST http://localhost:3034/api/accounts/:accountReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package", "billing": "year", "paymentMethod": "pm_123" }'
 
 or by User:
 

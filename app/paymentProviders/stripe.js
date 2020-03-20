@@ -50,10 +50,8 @@ const scaffoldStripeSubscription = ({ stripeCustomerId, subscription, payment })
 
 const createStripeCustomerAndSubscription = async ({ user, account, subscription, payment }) => {
   const stripeCustomerObj = scaffoldStripeCustomer({ user, account, payment })
-  console.log(`stripeCustomerObj:`, stripeCustomerObj)
   // Call Stripe API
   const customerResults = await stripe.customers.create(stripeCustomerObj)
-  console.log(`stripe.customers.create:`, customerResults)
   set(account, 'metadata.stripeCustomer', get(customerResults, 'id'))
   account.markModified('metadata')
   try {
@@ -70,7 +68,6 @@ const createStripeSubscription = async ({ user, account, subscription, payment }
   const stripeSubscriptionObj = scaffoldStripeSubscription({ stripeCustomerId, subscription, payment })
   // Call Stripe API
   const subscriptionResults = await stripe.subscriptions.create(stripeSubscriptionObj)
-  console.log(`stripe.subscriptions.create:`, subscriptionResults)
   set(subscription, 'metadata.stripeSubscription', get(subscriptionResults, 'id'))
   return { user, account, subscription }
 }
@@ -111,7 +108,6 @@ const updateSubscription = async ({ user, account, subscription, payment }) => n
 })
 
 const createOrUpdateSubscription = async ({ user, account, existingSubscription, newSubscription, payment }) => {
-  console.log(`createOrUpdateSubscription:`, { user, account, existingSubscription, newSubscription, payment })
   if (!payment.paymentMethod) throw new Error(`No paymentMethod provided`)
   // If existing subscription
   if (has(existingSubscription, 'metadata.stripeSubscription') && has(account, 'metadata.stripeCustomer')) {
@@ -127,7 +123,6 @@ const createOrUpdateSubscription = async ({ user, account, existingSubscription,
 
 // DELETE
 const deleteSubscription = (subscription) => new Promise(async (resolve, reject) => {
-  resolve('a value')
   const stripeSubscriptionId = getStripeSubscriptionID(subscription)
   if (stripeSubscriptionId) {
     stripe.subscriptions.del(stripeSubscriptionId, (err, stripeSubscription) => err ? reject(err) : resolve(stripeSubscription))
