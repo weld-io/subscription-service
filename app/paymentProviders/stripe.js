@@ -29,10 +29,12 @@ const scaffoldStripeCustomer = ({ user, account, payment }) => ({
   metadata: {
     user_id: user.reference
   },
-  payment_method: payment.paymentMethod,
-  invoice_settings: {
-    default_payment_method: payment.paymentMethod
-  }
+  ...(payment.paymentMethod && {
+    payment_method: payment.paymentMethod,
+    invoice_settings: {
+      default_payment_method: payment.paymentMethod
+    }
+  })
 })
 
 const scaffoldStripeSubscription = ({ stripeCustomerId, subscription, payment }) => {
@@ -44,16 +46,19 @@ const scaffoldStripeSubscription = ({ stripeCustomerId, subscription, payment })
     // plan: stripePlanName,
     items: [{ plan: stripePlanName }],
     expand: ['latest_invoice.payment_intent'],
-    source: payment.token,
     coupon: subscription.discountCode,
     // quantity: subscription.quantity,
-    tax_percent: payment.taxPercent
+    tax_percent: payment.taxPercent,
+    ...(payment.token && {
+      source: payment.token
+    })
   }
 }
 
 // ----- Calling Stripe -----
 
 const createStripeCustomerAndSubscription = async ({ user, account, subscription, payment }) => {
+  // if (!payment.paymentMethod) throw new Error(`No paymentMethod provided`)
   const stripeCustomerObj = scaffoldStripeCustomer({ user, account, payment })
   // Call Stripe API
   const { id } = await stripe.customers.create(stripeCustomerObj)
@@ -123,7 +128,6 @@ const updateSubscription = async ({ user, account, subscription, payment }) => n
 })
 
 const createOrUpdateSubscription = async ({ user, account, existingSubscription, newSubscription, payment }) => {
-  if (!payment.paymentMethod) throw new Error(`No paymentMethod provided`)
   // If existing subscription
   if (has(existingSubscription, 'metadata.stripeSubscription') && has(account, 'metadata.stripeCustomer')) {
     // Update existing
