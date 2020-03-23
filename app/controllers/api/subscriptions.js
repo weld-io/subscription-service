@@ -14,6 +14,7 @@ const {
   handleRequest,
   processAndRespond,
   getPaymentProvider,
+  getCacheProvider,
   sendResponse
 } = require('../../lib/helpers')
 
@@ -27,6 +28,8 @@ const {
   updatePaymentProviderSubscription,
   updateSubscriptionOnAccount,
   mergeAndUpdateSubscription,
+  isThisTheSubscriptionToCancel,
+  cancelSubscription,
   renewSubscriptionAndAccount
 } = require('../../lib/subscriptions')
 
@@ -83,33 +86,20 @@ const updateSubscription = function (req, res, next) {
 
 // Stop one or all subscriptions
 const deleteSubscription = function (req, res, next) {
-  getAccountThen(req, res, (err, account) => {
-    if (err) {
-      res.status(400).json({ message: err.message })
-      return
-    }
-    let subsStopped = 0
-    async.eachSeries(
-      account.subscriptions,
-      (sub, cb) => {
-        if ((req.params.subscriptionId === undefined || // Stop all
-          req.params.subscriptionId === sub._id.toString()) && // Stop one
-          !sub.dateStopped // Always: check that not already stopped
-        ) {
-          sub.dateStopped = Date.now()
-          subsStopped++
-          getPaymentProvider().deleteSubscription(sub, cb)
-        } else {
-          cb()
-        }
-      },
-      // When done
-      (err) => {
-        cacheProvider.purgeContentByKey(account.reference)
-        account.save((err, results) => sendResponse.call(res, err, { message: `Stopped ${subsStopped} subscriptions` }))
-      }
-    )
-  })
+  handleRequest(async () => {
+    const account = await getAccount(req.params)
+    if (!account) throw new Error(`Account not found:404`)
+    // Cancel all subscriptions or with matching ID
+    const { subscriptionId } = req.params
+    const cancellationPromises = account.subscriptions.map(subscription => cancelSubscription(subscriptionId, subscription))
+    const cancellationsResult = await Promise.all(cancellationPromises)
+    const subsStopped = cancellationsResult.reduce((result, value) => result + value, 0)
+    // Purge cache
+    getCacheProvider().purgeContentByKey(account.reference)
+    // Save account
+    const results = await account.save()
+    res.json({ message: `Stopped ${subsStopped} subscriptions` })
+  }, { req, res })
 }
 
 const renewSubscription = function (req, res, next) {

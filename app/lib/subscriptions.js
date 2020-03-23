@@ -130,6 +130,20 @@ const sendTheResponse2 = function (err, account) {
 
 // ----- deleteSubscription -----
 
+const isThisTheSubscriptionToCancel = (subscriptionId, subscription) => (subscriptionId === undefined || // Stop all
+  subscriptionId === subscription._id.toString()) && // Stop one
+  !subscription.dateStopped // Always: check that not already stopped
+
+const cancelSubscription = async (subscriptionId, subscription) => {
+  if (isThisTheSubscriptionToCancel(subscriptionId, subscription)) {
+    subscription.dateStopped = Date.now()
+    await getPaymentProvider().deleteSubscription(subscription)
+    return 1
+  } else {
+    return 0
+  }
+}
+
 // ----- Renew -----
 
 // This is the optional _outbound_ webhook to notify other webservices. It uses the WEBHOOK_RENEW_SUBSCRIPTION environment variable.
@@ -191,6 +205,8 @@ module.exports = {
   updateSubscriptionOnAccount,
   getSubscriptionIndex,
   mergeAndUpdateSubscription,
+  isThisTheSubscriptionToCancel,
+  cancelSubscription,
   postOutboundRenewWebhook,
   renewSubscriptionAndAccount
 }
