@@ -6,6 +6,7 @@
 
 const { has } = require('lodash')
 const express = require('express')
+const async = require('async')
 
 const {
   checkIfAuthorizedUser,
