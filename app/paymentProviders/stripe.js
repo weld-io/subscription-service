@@ -19,6 +19,7 @@ const getStripeSubscriptionID = sub => get(sub, 'metadata.stripeSubscription')
 // ----- Scaffolding -----
 
 const scaffoldStripeCustomer = ({ user, account, payment }) => ({
+  name: account.name,
   description: account.reference,
   email: account.email,
   address: {

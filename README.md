@@ -139,6 +139,8 @@ Note: `reference` is where you use your main permanent user ID, e.g. from anothe
 
 #### Create new user and account and subscription
 
+Note: currently creates a subscription without payment - don't use.
+
 	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "userId2", "account": { "name": "My Company 2", "email": "invoices@mycompany2.com" }, "subscription": { "plan": "trial", "dateExpires": "2018-04-01" } }'
 
 #### Get user
