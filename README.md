@@ -270,13 +270,15 @@ Notes:
 
 #### Update subscription
 
-Partial update:
+Change plan, billing cycle, etc.
 
-	curl -X PUT http://localhost:3034/api/accounts/:accountReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
+By Account:
 
-or:
+	curl -X PUT http://localhost:3034/api/accounts/:accountReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "plan": "enterprise" }'
 
-	curl -X PUT http://localhost:3034/api/users/:userReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
+or by User:
+
+	curl -X PUT http://localhost:3034/api/users/:userReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "plan": "enterprise" }'
 
 
 #### Renew subscription
