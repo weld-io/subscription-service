@@ -42,9 +42,13 @@ const scaffoldStripeSubscription = ({ stripeCustomerId, subscription, payment })
   // TODO: Fix ugly hack with isHexString to determine if it's a new plan reference, or a plan._id
   const stripePlanName = isHexString(subscription.plan) ? undefined : `${subscription.plan}_${subscription.billing || 'month'}`
   return {
-    customer: stripeCustomerId,
-    // plan: stripePlanName,
-    items: [{ plan: stripePlanName }],
+    ...(stripeCustomerId && {
+      customer: stripeCustomerId
+    }),
+    ...(stripePlanName && {
+      // plan: stripePlanName,
+      items: [{ plan: stripePlanName }]
+    }),
     expand: ['latest_invoice.payment_intent'],
     coupon: subscription.discountCode,
     // quantity: subscription.quantity,
@@ -105,34 +109,35 @@ const createSubscription = ({ user, account, subscription, payment }) => {
 }
 
 // UPDATE
-const updateSubscription = async ({ user, account, subscription, payment }) => new Promise(async (resolve, reject) => {
+const updateSubscription = async ({ account, subscription, payment }) => {
   const stripeCustomerId = getStripeCustomerID(account)
   const stripeSubscriptionId = getStripeSubscriptionID(subscription)
-  const stripeSubscriptionObj = scaffoldStripeSubscription({ subscription, payment })
-
-  const whenDone = function (stripeErr, stripeSubscription) {
-    if (stripeErr) {
-      reject(stripeErr)
-    } else {
-      set(subscription, 'metadata.stripeSubscription', get(stripeSubscription, 'id'))
-      resolve({ user, account, subscription })
-    }
-  }
 
   // Call Stripe API
   if (stripeSubscriptionId) {
-    stripe.customers.updateSubscription(stripeCustomerId, stripeSubscriptionId, stripeSubscriptionObj, whenDone)
+    const stripeSubscriptionObj = scaffoldStripeSubscription({ subscription, payment })
+    const currentStripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId)
+    await stripe.subscriptions.update(stripeSubscriptionId, {
+      cancel_at_period_end: false,
+      items: [{
+        id: currentStripeSubscription.items.data[0].id,
+        plan: stripeSubscriptionObj.items[0].plan
+      }]
+    })
   } else {
-    stripe.customers.createSubscription(stripeCustomerId, stripeSubscriptionObj, whenDone)
+    const stripeSubscriptionObj = scaffoldStripeSubscription({ stripeCustomerId, subscription, payment })
+    const subscriptionResults = await stripe.subscriptions.create(stripeSubscriptionObj)
+    set(subscription, 'metadata.stripeSubscription', get(subscriptionResults, 'id'))
   }
-})
+  return { account, subscription }
+}
 
 const createOrUpdateSubscription = async ({ user, account, existingSubscription, newSubscription, payment }) => {
   // If existing subscription
   if (has(existingSubscription, 'metadata.stripeSubscription') && has(account, 'metadata.stripeCustomer')) {
     // Update existing
     const updatedSubscription = merge({}, existingSubscription, pick(newSubscription, ['plan', 'billing']))
-    return updateSubscription({ user, account, subscription: updatedSubscription, payment }) // payment.taxPercent
+    return updateSubscription({ account, subscription: updatedSubscription, payment }) // payment.taxPercent
   } else {
     // If NO existing subscription, create new
     const paymentResults = await createSubscription({ user, account, subscription: newSubscription, payment }) // payment.taxPercent

@@ -1,4 +1,4 @@
-const { chain, cloneDeep, find, findIndex, get, has, merge, pick } = require('lodash')
+const { chain, cloneDeep, find, findIndex, get, merge } = require('lodash')
 const fetch = require('node-fetch')
 
 const {
@@ -9,7 +9,6 @@ const {
   getChildObjects,
   getPaymentProvider,
   isSubscriptionActive,
-  sendResponse,
   toJsonIfNeeded
 } = require('./helpers')
 
@@ -49,21 +48,22 @@ const getAccount = async (params) => {
 
 // ----- createSubscription -----
 
-const createSubscriptionObject = function (account, { params, body }) {
-  const newSubscription = merge({ billing: DEFAULT_BILLING }, body)
+const createSubscriptionObject = function (account, { params, body }, useDefaults = true) {
+  const newSubscription = merge({ billing: (useDefaults ? DEFAULT_BILLING : undefined) }, body)
   const user = { reference: params.userReference }
   account.email = body.email
   return { user, account, newSubscription }
 }
 
-const getPlanForNewSubscription = (newSubscription) => new Promise(async (resolve, reject) => {
-  const subscriptionCopy = cloneDeep(newSubscription)
+const getPlanForSubscription = (subscription) => new Promise(async (resolve, reject) => {
+  const subscriptionCopy = cloneDeep(subscription)
   changeReferenceToId(
     { modelName: 'Plan', parentProperty: 'plan', childIdentifier: 'reference' },
     { body: subscriptionCopy },
     undefined,
     (err, plans) => {
       if (err) reject(err)
+      else if (!plans) resolve({})
       else resolve(plans[0])
     }
   )
@@ -89,6 +89,14 @@ const findCurrentActiveSubscriptions = ({ account, oldPlans, newPlan }) => {
   }
 }
 
+const findCurrentActiveSubscriptionsFromRequest = async (account, { params, body }, useDefaults) => {
+  const { newSubscription, user } = createSubscriptionObject(account, { params, body }, useDefaults)
+  const newPlan = await getPlanForSubscription(newSubscription)
+  const oldPlans = await getPlansForOldSubscriptions(account)
+  const existingSubscription = findCurrentActiveSubscriptions({ account, oldPlans, newPlan })
+  return { existingSubscription, newSubscription, user, newPlan, oldPlans }
+}
+
 const updateSubscriptionOnAccount = async function ({ account, subscription, newPlan, dateExpires, isNew }) {
   subscription.plan = newPlan._id
   subscription.dateExpires = dateExpires
@@ -97,35 +105,22 @@ const updateSubscriptionOnAccount = async function ({ account, subscription, new
   return account.subscriptions
 }
 
-/*
-const updatePaymentProviderSubscription = function (account, cb) {
-  getPaymentProvider().updateSubscription(
-    {
-      user: { reference: req.params.userReference },
-      account,
-      subscription: { plan: req.body.plan, billing: req.body.billing || DEFAULT_BILLING },
-      payment: { token: req.body.token } // taxPercent
-    },
-    cb
-  )
-}
-*/
-
 // ----- updateSubscription -----
 
-const getSubscriptionIndex = (account, subscriptionId) => findIndex(get(account, 'subscriptions'), sub => sub._id.toString() === subscriptionId)
-
-const mergeAndUpdateSubscription = function (user, account, subscription, cb) {
-  const subscriptionIndex = getSubscriptionIndex(account, req.params.subscriptionId)
-  if (subscriptionIndex >= 0) {
-    merge(account.subscriptions[subscriptionIndex], req.body)
-  };
-  account.save(cb)
+const updatePaymentProviderSubscription = async function ({ account, subscription, payment }) {
+  return getPaymentProvider().updateSubscription({ account, subscription, payment }) // taxPercent
 }
 
-const sendTheResponse2 = function (err, account) {
-  getCacheProvider().purgeContentByKey(account.reference)
-  sendResponse.call(res, err, get(account, 'subscriptions.' + getSubscriptionIndex(account)))
+const getSubscription = (account, subscriptionId) => account.subscriptions.filter(subscription => subscription._id.toString() === subscriptionId)[0]
+
+const getSubscriptionIndex = (account, subscriptionId) => findIndex(get(account, 'subscriptions'), subscription => subscription._id.toString() === subscriptionId)
+
+const mergeAndUpdateSubscription = async function ({ subscriptionId, account, subscription }) {
+  if (!subscriptionId) throw new Error(`subscriptionId not specified`)
+  const subscriptionIndex = getSubscriptionIndex(account, subscriptionId)
+  subscription.plan = (await getPlanForSubscription(subscription))._id
+  if (subscriptionIndex >= 0) merge(account.subscriptions[subscriptionIndex], subscription)
+  return account.save()
 }
 
 // ----- deleteSubscription -----
@@ -194,15 +189,19 @@ const renewSubscriptionAndAccount = function (err, { account, subscriptions, int
 // ----- Public API -----
 
 module.exports = {
+  DEFAULT_BILLING,
   getAccountThen,
   getAccount,
   createSubscriptionObject,
-  getPlanForNewSubscription,
+  getPlanForSubscription,
   getPlansForOldSubscriptions,
   isSubscriptionWithoutAllowMultiple,
   getActiveSubscriptionsWithoutAllowMultiple,
   findCurrentActiveSubscriptions,
+  findCurrentActiveSubscriptionsFromRequest,
   updateSubscriptionOnAccount,
+  updatePaymentProviderSubscription,
+  getSubscription,
   getSubscriptionIndex,
   mergeAndUpdateSubscription,
   isThisTheSubscriptionToCancel,

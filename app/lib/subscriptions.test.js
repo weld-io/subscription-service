@@ -3,7 +3,7 @@ const { omit } = require('lodash')
 const {
   getAccount,
   createSubscriptionObject,
-  getPlanForNewSubscription,
+  getPlanForSubscription,
   getPlansForOldSubscriptions,
   isSubscriptionWithoutAllowMultiple,
   getActiveSubscriptionsWithoutAllowMultiple,
@@ -220,8 +220,8 @@ describe('subscriptions.js', function () {
     )
   })
 
-  it('should getPlanForNewSubscription', async function () {
-    const result = await getPlanForNewSubscription({ plan: 'enterprise' })
+  it('should getPlanForSubscription', async function () {
+    const result = await getPlanForSubscription({ plan: 'enterprise' })
     const resultsExclDateAndID = omit(result, ['_id', 'dateCreated', '__v'])
     expect(
       resultsExclDateAndID

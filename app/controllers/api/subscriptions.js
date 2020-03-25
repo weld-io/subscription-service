@@ -4,9 +4,8 @@
 // Creator: Tom Söderlund
 //
 
-const { has } = require('lodash')
+const { has, get, merge } = require('lodash')
 const express = require('express')
-const async = require('async')
 
 const {
   checkIfAuthorizedUser,
@@ -14,21 +13,22 @@ const {
   handleRequest,
   processAndRespond,
   getPaymentProvider,
-  getCacheProvider,
-  sendResponse
+  getCacheProvider
 } = require('../../lib/helpers')
 
 const {
-  getAccountThen,
+  DEFAULT_BILLING,
   getAccount,
   createSubscriptionObject,
-  getPlanForNewSubscription,
+  getPlanForSubscription,
   getPlansForOldSubscriptions,
   findCurrentActiveSubscriptions,
+  findCurrentActiveSubscriptionsFromRequest,
+  getSubscription,
+  getSubscriptionIndex,
   updatePaymentProviderSubscription,
   updateSubscriptionOnAccount,
   mergeAndUpdateSubscription,
-  isThisTheSubscriptionToCancel,
   cancelSubscription,
   renewSubscriptionAndAccount
 } = require('../../lib/subscriptions')
@@ -38,7 +38,7 @@ const {
 const listSubscriptions = function (req, res, next) {
   handleRequest(async () => {
     const account = await getAccount(req.params)
-    if (!account) throw new Error(`Account not found:404`)
+    if (!account) throw new Error(`Account not found;404`)
     res.json(account.subscriptions)
   }, { req, res })
 }
@@ -57,12 +57,9 @@ const readSubscription = function (req, res, next) {
 const createSubscription = function (req, res, next) {
   handleRequest(async () => {
     const account = await getAccount(req.params)
-    if (!account) throw new Error(`Account not found:404`)
+    if (!account) throw new Error(`Account not found;404`)
 
-    const { newSubscription, user } = createSubscriptionObject(account, req)
-    const newPlan = await getPlanForNewSubscription(newSubscription)
-    const oldPlans = await getPlansForOldSubscriptions(account)
-    const existingSubscription = findCurrentActiveSubscriptions({ account, oldPlans, newPlan })
+    const { existingSubscription, newSubscription, user, newPlan, oldPlans } = await findCurrentActiveSubscriptionsFromRequest(account, req)
 
     // Use ?ignorePaymentProvider=true on URL to avoid Stripe subscriptions being created, e.g. for migration purposes
     const usePaymentProvider = !has(req, 'query.ignorePaymentProvider')
@@ -78,17 +75,27 @@ const createSubscription = function (req, res, next) {
 }
 
 const updateSubscription = function (req, res, next) {
-  // getAccountThen.bind(this, req, res),
-  // updatePaymentProviderSubscription,
-  // mergeAndUpdateSubscription
-  // sendTheResponse
+  handleRequest(async () => {
+    const account = await getAccount(req.params)
+    if (!account) throw new Error(`Account not found;404`)
+    const { subscriptionId } = req.params
+    const { plan, billing, token, paymentMethod } = req.body
+    const existingSubscription = getSubscription(account, subscriptionId)
+    if (existingSubscription.dateStopped) throw new Error(`Subscription '${existingSubscription._id}' is stopped and can’t be updated`)
+    const subscription = merge({}, existingSubscription, { plan, billing })
+    const results = await updatePaymentProviderSubscription({ account, subscription, payment: { token, paymentMethod } })
+    await mergeAndUpdateSubscription({ subscriptionId, account: results.account, subscription: results.subscription })
+    await getCacheProvider().purgeContentByKey(account.reference)
+    const updatedSubscription = get(account, 'subscriptions.' + getSubscriptionIndex(account, subscriptionId))
+    res.json(updatedSubscription)
+  }, { req, res })
 }
 
 // Stop one or all subscriptions
 const deleteSubscription = function (req, res, next) {
   handleRequest(async () => {
     const account = await getAccount(req.params)
-    if (!account) throw new Error(`Account not found:404`)
+    if (!account) throw new Error(`Account not found;404`)
     // Cancel all subscriptions or with matching ID
     const { subscriptionId } = req.params
     const cancellationPromises = account.subscriptions.map(subscription => cancelSubscription(subscriptionId, subscription))
@@ -97,7 +104,7 @@ const deleteSubscription = function (req, res, next) {
     // Purge cache
     getCacheProvider().purgeContentByKey(account.reference)
     // Save account
-    const results = await account.save()
+    await account.save()
     res.json({ message: `Stopped ${subsStopped} subscriptions` })
   }, { req, res })
 }
