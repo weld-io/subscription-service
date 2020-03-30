@@ -64,7 +64,6 @@ const scaffoldStripeSubscription = ({ stripeCustomerId, subscription, payment })
 const createStripeCustomerAndSubscription = async ({ user, account, subscription, payment }) => {
   // if (!payment.paymentMethod) throw new Error(`No paymentMethod provided`)
   const stripeCustomerObj = scaffoldStripeCustomer({ user, account, payment })
-  console.log(`stripeCustomerObj:`, stripeCustomerObj)
   // Call Stripe API
   const { id } = await stripe.customers.create(stripeCustomerObj)
   set(account, 'metadata.stripeCustomer', id)

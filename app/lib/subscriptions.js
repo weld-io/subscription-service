@@ -37,7 +37,7 @@ const getAccount = async (params) => {
 const createSubscriptionObject = function (account, { params, body }, useDefaults = true) {
   const newSubscription = merge({ billing: (useDefaults ? DEFAULT_BILLING : undefined) }, body)
   const user = { reference: params.userReference }
-  account.email = body.email
+  account.email = body.email || account.email // Can override email
   return { user, account, newSubscription }
 }
 
