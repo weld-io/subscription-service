@@ -96,6 +96,25 @@ const createStripeSubscription = async ({ user, account, subscription, payment }
   return { user, account, subscription }
 }
 
+const replacePaymentMethod = async (stripeCustomerId, newPaymentMethod) => {
+  // Optional: Get current paymentMethods
+  // Optional: Cancel them all
+  // Attach new
+  await stripe.paymentMethods.attach(
+    newPaymentMethod,
+    { customer: stripeCustomerId }
+  )
+  // Set the new as default
+  await stripe.customers.update(
+    stripeCustomerId,
+    {
+      invoice_settings: {
+        default_payment_method: newPaymentMethod
+      }
+    }
+  )
+}
+
 // ----- API methods -----
 
 // CREATE
@@ -115,10 +134,7 @@ const updateSubscription = async ({ account, subscription, payment }) => {
 
   // Update paymentMethod
   if (payment.paymentMethod) {
-    await stripe.paymentMethods.attach(
-      payment.paymentMethod,
-      { customer: stripeCustomerId }
-    )
+    await replacePaymentMethod(stripeCustomerId, payment.paymentMethod)
   }
 
   // Call Stripe API
