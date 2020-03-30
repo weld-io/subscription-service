@@ -11,19 +11,13 @@ const {
   checkIfAuthorizedUser,
   getDateExpires,
   handleRequest,
-  CustomError,
   processAndRespond,
   getPaymentProvider,
   getCacheProvider
 } = require('../../lib/helpers')
 
 const {
-  DEFAULT_BILLING,
   getAccount,
-  createSubscriptionObject,
-  getPlanForSubscription,
-  getPlansForOldSubscriptions,
-  findCurrentActiveSubscriptions,
   findCurrentActiveSubscriptionsFromRequest,
   getSubscription,
   getSubscriptionIndex,
@@ -58,7 +52,7 @@ const createOrUpdateSubscription = function (req, res, next) {
   handleRequest(async () => {
     const account = await getAccount(req.params)
 
-    const { existingSubscription, newSubscription, user, newPlan, oldPlans } = await findCurrentActiveSubscriptionsFromRequest(account, req)
+    const { existingSubscription, newSubscription, user, newPlan } = await findCurrentActiveSubscriptionsFromRequest(account, req)
 
     // Use ?ignorePaymentProvider=true on URL to avoid Stripe subscriptions being created, e.g. for migration purposes
     const usePaymentProvider = !has(req, 'query.ignorePaymentProvider')

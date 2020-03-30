@@ -49,6 +49,7 @@ const PlanSchema = new Schema({
 PlanSchema.pre('validate', function (next) {
   const slugSuggestion = this.reference || this.name
   getUniqueSlugFromCollection('Plan', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+    if (err) return next(err)
     this.reference = uniqueSlug
     next()
   })

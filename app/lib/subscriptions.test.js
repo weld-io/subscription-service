@@ -8,14 +8,13 @@ const {
   isSubscriptionWithoutAllowMultiple,
   getActiveSubscriptionsWithoutAllowMultiple,
   findCurrentActiveSubscriptions,
-  updateSubscriptionOnAccount,
-  updatePaymentProviderSubscription,
-  createOrUpdatePaymentProviderSubscription,
-  sendTheResponse,
-  getSubscriptionIndex,
-  mergeAndUpdateSubscription,
-  postOutboundRenewWebhook,
-  renewSubscriptionAndAccount
+  updateSubscriptionOnAccount
+  // updatePaymentProviderSubscription,
+  // createOrUpdatePaymentProviderSubscription,
+  // getSubscriptionIndex,
+  // mergeAndUpdateSubscription,
+  // postOutboundRenewWebhook,
+  // renewSubscriptionAndAccount
 } = require('./subscriptions')
 
 const { closeDatabase } = require('../config/database')
@@ -278,12 +277,6 @@ describe('subscriptions.js', function () {
     // console.log(`updateSubscriptionOnAccount:`, result)
     expect(Object.keys(result[0])).toEqual(['metadata', 'dateExpires', '_id', 'dateCreated', 'billing', 'plan'])
   })
-
-  // it('should sendTheResponse', async function () {
-  //   const result = await sendTheResponse()
-  //   console.log(`sendTheResponse:`, result)
-  //   expect(result).toEqual(true)
-  // })
 
   // it('should getSubscriptionIndex', async function () {
   //   const result = await getSubscriptionIndex()

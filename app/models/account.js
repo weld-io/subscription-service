@@ -55,6 +55,7 @@ const AccountSchema = new Schema({
 AccountSchema.pre('validate', function (next) {
   const slugSuggestion = this.reference || this.name || this.email
   getUniqueSlugFromCollection('Account', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+    if (err) return next(err)
     this.reference = uniqueSlug
     next()
   })

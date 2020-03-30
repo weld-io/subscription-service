@@ -23,6 +23,7 @@ const identifyingKey = 'reference'
 
 const addPlans = function (req, res, next) {
   req.crudify.user.getSubscriptionPlans({ includeAllSubscriptions: get(req, 'query.includeAllSubscriptions') }, (err, { subscriptions, subscriptionsWithPlan }) => {
+    if (err) return next(err)
     req.crudify.result = toJsonIfNeeded(req.crudify.result)
     req.crudify.result.account.subscriptions = subscriptionsWithPlan
     req.crudify.result.plans = map(subscriptionsWithPlan, subscriptionPlan => subscriptionPlan.plan.reference)
@@ -32,6 +33,7 @@ const addPlans = function (req, res, next) {
 
 const addServices = function (req, res, next) {
   req.crudify.user.getServices((err, services) => {
+    if (err) return next(err)
     req.crudify.result = toJsonIfNeeded(req.crudify.result)
     req.crudify.result.services = services
     next()

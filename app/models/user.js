@@ -40,6 +40,7 @@ const UserSchema = new Schema({
 UserSchema.pre('validate', function (next) {
   const slugSuggestion = this.reference
   getUniqueSlugFromCollection('Account', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+    if (err) return next(err)
     this.reference = uniqueSlug
     next()
   })
@@ -55,6 +56,7 @@ UserSchema.methods.getSubscriptionPlans = function (options, callback) {
   const selectedSubscriptions = chain(this.account.subscriptions).filter(filterFunction).value()
   const planIds = map(selectedSubscriptions, 'plan')
   Plan.find({ '_id': { $in: planIds } }).exec((err, plans) => {
+    if (err) return callback(err)
     const subscriptionsWithPlan = map(selectedSubscriptions, subscription => {
       const plan = chain(plans).find({ _id: subscription.plan }).pick(['name', 'reference', 'price', 'isAvailable']).value()
       const subObj = omit(subscription.toJSON(), ['plan'])
@@ -68,6 +70,7 @@ UserSchema.methods.getSubscriptionPlans = function (options, callback) {
 UserSchema.methods.getServices = function (callback) {
   const planIds = chain(this.account.subscriptions).filter(isSubscriptionActive).map('plan').value()
   Plan.find({ '_id': { $in: planIds } }).populate('services').exec((err, plans) => {
+    if (err) return callback(err)
     const allServices = arrayToCollection(chain(plans).map('services').flatten().uniq().value())
     callback(null, allServices)
   })
