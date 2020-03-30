@@ -6,7 +6,7 @@
 
 'use strict'
 
-const { chain, get, has, merge, pick, set, some } = require('lodash')
+const { chain, get, merge, pick, set, some } = require('lodash')
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 const { isHexString } = require('../lib/helpers')
@@ -134,7 +134,8 @@ const updateSubscription = async ({ account, subscription, payment }) => {
 
 const createOrUpdateSubscription = async ({ user, account, existingSubscription, newSubscription, payment }) => {
   // If existing subscription
-  if (has(existingSubscription, 'metadata.stripeSubscription') && has(account, 'metadata.stripeCustomer')) {
+  // Note: has() doesn’t work on Mongoose objects, but get() does.
+  if (get(existingSubscription, 'metadata.stripeSubscription') && get(account, 'metadata.stripeCustomer')) {
     // Update existing
     const updatedSubscription = merge({}, existingSubscription, pick(newSubscription, ['plan', 'billing']))
     return updateSubscription({ account, subscription: updatedSubscription, payment }) // payment.taxPercent

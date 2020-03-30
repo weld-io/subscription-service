@@ -54,7 +54,7 @@ const readSubscription = function (req, res, next) {
   }))
 }
 
-const createSubscription = function (req, res, next) {
+const createOrUpdateSubscription = function (req, res, next) {
   handleRequest(async () => {
     const account = await getAccount(req.params)
 
@@ -68,7 +68,6 @@ const createSubscription = function (req, res, next) {
       : {}
     const isNew = usePaymentProvider ? paymentResults.isNew : true
     const newSubscriptions = await updateSubscriptionOnAccount({ account, subscription: (existingSubscription || newSubscription), newPlan, dateExpires: getDateExpires(req.body), isNew })
-    // cb(saveErr, { user, account: savedAccount, newSubscription: result.subscription })
     res.json(newSubscriptions)
   }, { req, res })
 }
@@ -117,7 +116,7 @@ module.exports = function (app, config) {
   // CRUD routes: Account
   router.get('/api/accounts/:accountReference/subscriptions', listSubscriptions)
   router.get('/api/accounts/:accountReference/subscriptions/:subscriptionId', readSubscription)
-  router.post('/api/accounts/:accountReference/subscriptions', createSubscription)
+  router.post('/api/accounts/:accountReference/subscriptions', createOrUpdateSubscription)
   router.put('/api/accounts/:accountReference/subscriptions/:subscriptionId', updateSubscription)
   router.delete('/api/accounts/:accountReference/subscriptions/:subscriptionId', deleteSubscription)
   router.delete('/api/accounts/:accountReference/subscriptions', deleteSubscription)
@@ -125,7 +124,7 @@ module.exports = function (app, config) {
   // CRUD routes: User
   router.get('/api/users/:userReference/subscriptions', checkIfAuthorizedUser.bind(this, 'params.userReference'), listSubscriptions)
   router.get('/api/users/:userReference/subscriptions/:subscriptionId', checkIfAuthorizedUser.bind(this, 'params.userReference'), readSubscription)
-  router.post('/api/users/:userReference/subscriptions', checkIfAuthorizedUser.bind(this, 'params.userReference'), createSubscription)
+  router.post('/api/users/:userReference/subscriptions', checkIfAuthorizedUser.bind(this, 'params.userReference'), createOrUpdateSubscription)
   router.put('/api/users/:userReference/subscriptions/:subscriptionId', checkIfAuthorizedUser.bind(this, 'params.userReference'), updateSubscription)
   router.delete('/api/users/:userReference/subscriptions/:subscriptionId', checkIfAuthorizedUser.bind(this, 'params.userReference'), deleteSubscription)
   router.delete('/api/users/:userReference/subscriptions', checkIfAuthorizedUser.bind(this, 'params.userReference'), deleteSubscription)
