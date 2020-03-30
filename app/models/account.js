@@ -37,6 +37,7 @@ const AccountSchema = new Schema({
   email: { type: String },
   countryCode: { type: String },
   vatNumber: { type: String },
+  vatType: { type: String },
   dateCreated: { type: Date, default: Date.now },
   subscriptions: [Subscription],
   metadata: {} // for Stripe IDs etc
