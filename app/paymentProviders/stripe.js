@@ -64,6 +64,7 @@ const scaffoldStripeSubscription = ({ stripeCustomerId, subscription, payment })
 const createStripeCustomerAndSubscription = async ({ user, account, subscription, payment }) => {
   // if (!payment.paymentMethod) throw new Error(`No paymentMethod provided`)
   const stripeCustomerObj = scaffoldStripeCustomer({ user, account, payment })
+  console.log(`stripeCustomerObj:`, stripeCustomerObj)
   // Call Stripe API
   const { id } = await stripe.customers.create(stripeCustomerObj)
   set(account, 'metadata.stripeCustomer', id)
@@ -71,8 +72,7 @@ const createStripeCustomerAndSubscription = async ({ user, account, subscription
   // Tax ID
   if (account.vatNumber) {
     try {
-      // TODO: support multiple TaxID types
-      await stripe.customers.createTaxId(id, { value: account.vatNumber, type: 'eu_vat' })
+      await stripe.customers.createTaxId(id, { value: account.vatNumber, type: account.vatType || 'eu_vat' })
     } catch (err) {
       console.warn(`Tax/VAT ID not correct: ${err.message || err}`, account.name, account.vatNumber)
     }
