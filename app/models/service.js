@@ -8,7 +8,8 @@
 
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
-const helpers = require('../config/helpers')
+
+const { getUniqueSlugFromCollection, stripIdsFromRet } = require('../lib/helpers')
 
 const ServiceSchema = new Schema({
   reference: { type: String, unique: true, required: true, sparse: true },
@@ -19,14 +20,15 @@ const ServiceSchema = new Schema({
 },
 {
   toJSON: {
-    transform: helpers.stripIdsFromRet
+    transform: stripIdsFromRet
   }
 })
 
 // Set reference/slug
 ServiceSchema.pre('validate', function (next) {
   const slugSuggestion = this.reference || this.name
-  helpers.getUniqueSlugFromCollection('Service', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+  getUniqueSlugFromCollection('Service', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+    if (err) return next(err)
     this.reference = uniqueSlug
     next()
   })

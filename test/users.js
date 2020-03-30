@@ -5,7 +5,7 @@ const test = require('tape')
 const request = require('supertest')
 const async = require('async')
 
-// const helpers = require('../app/config/helpers')
+// const helpers = require('../app/lib/helpers')
 
 test('Test the Users API', function (assert) {
   const app = require('../app/app')

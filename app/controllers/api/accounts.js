@@ -6,11 +6,10 @@
 
 'use strict'
 
-const _ = require('lodash')
+const { get } = require('lodash')
 const mongooseCrudify = require('mongoose-crudify')
 
-const helpers = require('../../config/helpers')
-const cacheProvider = helpers.getCacheProvider()
+const { getCacheProvider, processAndRespond, sendRequestResponse } = require('../../lib/helpers')
 const Account = require('mongoose').model('Account')
 const express = require('express')
 
@@ -19,16 +18,16 @@ const express = require('express')
 const identifyingKey = 'reference'
 
 const addCachingKey = function (req, res, next) {
-  cacheProvider.setKeyOnResponse(res, _.get(req, 'crudify.account.reference'))
+  getCacheProvider().setKeyOnResponse(res, get(req, 'crudify.account.reference'))
   next()
 }
 
 const updatePartialSubscription = async function (req, res, next) {
-  helpers.processAndRespond(res, new Promise(async (resolve, reject) => {
+  processAndRespond(res, new Promise(async (resolve, reject) => {
     try {
       const query = { reference: req.params.accountReference }
       const results = Account.update(query, { $set: req.body }, { upsert: true })
-      cacheProvider.purgeContentByKey(req.params.accountReference)
+      getCacheProvider().purgeContentByKey(req.params.accountReference)
       resolve(results)
     } catch (err) {
       reject(err)
@@ -47,7 +46,7 @@ module.exports = function (app, config) {
       endResponseInAction: false,
       afterActions: [
         { middlewares: [addCachingKey], only: ['read'] },
-        { middlewares: [helpers.sendRequestResponse] }
+        { middlewares: [sendRequestResponse] }
       ]
     })
   )

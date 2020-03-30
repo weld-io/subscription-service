@@ -4,8 +4,8 @@ const jwt = require('express-jwt')
 
 module.exports = function (app, config) {
   // Sets the JWT properties req.user.d.uid and req.user.d.role
-
   if (process.env.DISABLE_JWT !== 'true') {
+    console.log('JWT authentication is enabled.')
     app.use(
       jwt({ secret: process.env.JWT_SECRET })
       // When not to use JWT:

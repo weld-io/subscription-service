@@ -8,7 +8,7 @@
 
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
-const helpers = require('../config/helpers')
+const { getUniqueSlugFromCollection } = require('../lib/helpers')
 
 // Consumable: e.g. projects, documents
 const Consumable = new Schema({
@@ -41,14 +41,15 @@ const PlanSchema = new Schema({
 },
 {
   toJSON: {
-    // transform: helpers.stripIdsFromRet,
+    // transform: stripIdsFromRet,
   }
 })
 
 // Set reference/slug
 PlanSchema.pre('validate', function (next) {
   const slugSuggestion = this.reference || this.name
-  helpers.getUniqueSlugFromCollection('Plan', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+  getUniqueSlugFromCollection('Plan', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+    if (err) return next(err)
     this.reference = uniqueSlug
     next()
   })
