@@ -75,10 +75,7 @@ module.exports.getUniqueSlugFromCollection = function (collectionName, keyField 
   })
 }
 
-module.exports.toJsonIfNeeded = obj => {
-  obj = obj.toJSON ? obj.toJSON() : obj
-  return obj
-}
+module.exports.toJsonIfNeeded = obj => (obj && obj.toJSON) ? obj.toJSON() : obj
 
 // [{ reference: foo, ... }, { reference: bar, ... }] -> { foo: ..., bar: ... }
 module.exports.arrayToCollection = (array, keyField = 'reference') => reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection }, {})
