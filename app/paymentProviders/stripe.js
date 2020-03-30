@@ -173,14 +173,12 @@ const createOrUpdateSubscription = async ({ user, account, existingSubscription,
 }
 
 // DELETE
-const deleteSubscription = (subscription) => new Promise(async (resolve, reject) => {
+const deleteSubscription = async (subscription) => {
   const stripeSubscriptionId = getStripeSubscriptionID(subscription)
-  if (stripeSubscriptionId) {
-    stripe.subscriptions.del(stripeSubscriptionId, (err, stripeSubscription) => err ? reject(err) : resolve(stripeSubscription))
-  } else {
-    reject(new Error('No stripeSubscriptionId'))
-  }
-})
+  if (!stripeSubscriptionId) throw new Error(`No stripeSubscriptionId`)
+  const stripeSubscription = await stripe.subscriptions.del(stripeSubscriptionId)
+  return stripeSubscription
+}
 
 // Webhook for renewal
 const receiveRenewSubscription = function (req, callback) {
