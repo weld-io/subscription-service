@@ -106,7 +106,11 @@ const deleteSubscription = function (req, res, next) {
 }
 
 const renewSubscription = function (req, res, next) {
-  getPaymentProvider().receiveRenewSubscription(req, renewSubscriptionAndAccount)
+  handleRequest(async () => {
+    const { account, subscriptions, interval, intervalCount } = await getPaymentProvider().receiveRenewSubscription(req.body)
+    await renewSubscriptionAndAccount({ account, subscriptions, interval, intervalCount })
+    res.json({ message: `Updated account and ${subscriptions.length} subscription(s)` })
+  }, { req, res })
 }
 
 module.exports = function (app, config) {

@@ -181,13 +181,13 @@ const deleteSubscription = async (subscription) => {
 }
 
 // Webhook for renewal
-const receiveRenewSubscription = function (req, callback) {
-  const webhookType = get(req, 'body.type')
-  const stripeCustomerId = get(req, 'body.data.object.customer')
-  const stripeSubscriptionId = get(req, 'body.data.object.subscription')
+const receiveRenewSubscription = async function (requestBody) {
+  const webhookType = requestBody.type
+  const stripeCustomerId = get(requestBody, 'data.object.customer')
+  const stripeSubscriptionId = get(requestBody, 'data.object.subscription')
   console.log(`Stripe "${webhookType}" webhook received`)
   if (webhookType === 'invoice.payment_succeeded' && stripeCustomerId) {
-    const lineItems = get(req, 'body.data.object.lines.data')
+    const lineItems = get(requestBody, 'data.object.lines.data')
     // If contains 'year', then extend a year etc
     const interval = some(lineItems, { plan: { interval: 'year' } }) ? 'year' : 'month'
     // TODO: use interval_count from Stripe
@@ -196,16 +196,12 @@ const receiveRenewSubscription = function (req, callback) {
     // Look up Account and Subscriptions in database
     const query = { 'metadata.stripeCustomer': stripeCustomerId }
     const Account = require('mongoose').model('Account')
-    Account.findOne(query).exec((accountErr, account) => {
-      if (!accountErr && account) {
-        const subscriptions = chain(account.subscriptions).filter(sub => get(sub, 'metadata.stripeSubscription') === stripeSubscriptionId).value()
-        callback(null, { account, subscriptions, interval, intervalCount })
-      } else {
-        callback(new Error(`Account not found: ${stripeCustomerId}`))
-      }
-    })
+    const account = await Account.findOne(query).exec()
+    if (!account) throw new Error(`Account not found: ${stripeCustomerId}`)
+    const subscriptions = chain(account.subscriptions).filter(sub => get(sub, 'metadata.stripeSubscription') === stripeSubscriptionId).value()
+    return { account, subscriptions, interval, intervalCount }
   } else {
-    callback(new Error('No valid Stripe webhook'))
+    throw new Error('No valid Stripe webhook')
   }
 }
 

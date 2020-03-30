@@ -146,48 +146,39 @@ const cancelSubscription = async (subscriptionId, subscription) => {
 // ----- Renew -----
 
 // This is the optional _outbound_ webhook to notify other webservices. It uses the WEBHOOK_RENEW_SUBSCRIPTION environment variable.
-const postOutboundRenewWebhook = function ({ account, users, subscriptions, interval, intervalCount }, callback) {
-  if (process.env.WEBHOOK_RENEW_SUBSCRIPTION) {
-    fetch(process.env.WEBHOOK_RENEW_SUBSCRIPTION,
-      {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          type: 'renew',
-          account: account,
-          users: users,
-          subscriptions: subscriptions,
-          interval: interval,
-          intervalCount: intervalCount
-        })
-      }
-    )
-      .then(callback)
-    if (callback) callback()
-  } else {
-    if (callback) callback()
-  }
+const postOutboundRenewWebhook = async function ({ account, users, subscriptions, interval, intervalCount }) {
+  if (!process.env.WEBHOOK_RENEW_SUBSCRIPTION) return
+  fetch(
+    process.env.WEBHOOK_RENEW_SUBSCRIPTION,
+    {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        type: 'renew',
+        account,
+        users,
+        subscriptions,
+        interval,
+        intervalCount
+      })
+    }
+  )
 }
 
-const renewSubscriptionAndAccount = function (err, { account, subscriptions, interval, intervalCount }) {
-  if (!err) {
-    subscriptions.forEach(sub => {
-      sub.dateExpires = interval === 'year' ? dateIn1Year() : dateIn1Month()
-    })
-    account.save()
-    getCacheProvider().purgeContentByKey(account.reference)
-    const User = require('mongoose').model('User')
-    User.find({ account: account._id }).exec((err, users) => {
-      postOutboundRenewWebhook({ account, users, subscriptions, interval, intervalCount })
-    })
-    res.json({ message: `Updated account and ${subscriptions.length} subscription(s)` })
-  } else {
-    console.error(`receiveRenewSubscription`, err)
-    res.status(400).json({ message: err })
-  }
+const renewSubscriptionAndAccount = async function ({ account, subscriptions, interval, intervalCount }) {
+  // Update all subscriptions on the account
+  subscriptions.forEach(sub => {
+    sub.dateExpires = interval === 'year' ? dateIn1Year() : dateIn1Month()
+  })
+  account.save()
+  getCacheProvider().purgeContentByKey(account.reference)
+  // Webhook
+  const User = require('mongoose').model('User')
+  const users = await User.find({ account: account._id }).exec()
+  await postOutboundRenewWebhook({ account, users, subscriptions, interval, intervalCount })
 }
 
 // ----- Public API -----
