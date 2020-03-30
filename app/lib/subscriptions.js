@@ -136,7 +136,7 @@ const isThisTheSubscriptionToCancel = (subscriptionId, subscription) => (subscri
 const cancelSubscription = async (subscriptionId, subscription) => {
   if (isThisTheSubscriptionToCancel(subscriptionId, subscription)) {
     subscription.dateStopped = Date.now()
-    if (get(subscription, 'metadata.stripeSubscriptionId')) await getPaymentProvider().deleteSubscription(subscription)
+    if (get(subscription, 'metadata.stripeSubscription')) await getPaymentProvider().deleteSubscription(subscription)
     return 1
   } else {
     return 0
