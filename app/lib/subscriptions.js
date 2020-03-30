@@ -9,7 +9,8 @@ const {
   getChildObjects,
   getPaymentProvider,
   isSubscriptionActive,
-  toJsonIfNeeded
+  toJsonIfNeeded,
+  CustomError
 } = require('./helpers')
 
 const DEFAULT_BILLING = 'month'
@@ -37,13 +38,16 @@ const getAccountThen = function (req, res, callback) {
 const getAccount = async (params) => {
   const Account = require('mongoose').model('Account')
   const query = { reference: params.accountReference || params.userReference }
+  let account
   if (params.accountReference) {
-    return Account.findOne(query).exec()
+    account = await Account.findOne(query).exec()
   } else {
     const User = require('mongoose').model('User')
     const user = await User.findOne(query).exec()
-    return Account.findById(user.account).exec()
+    account = await Account.findById(user.account).exec()
   }
+  if (!account) throw new CustomError(`Account not found: ${JSON.stringify(params)}`, 404)
+  return account
 }
 
 // ----- createSubscription -----

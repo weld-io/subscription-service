@@ -11,6 +11,7 @@ const {
   checkIfAuthorizedUser,
   getDateExpires,
   handleRequest,
+  CustomError,
   processAndRespond,
   getPaymentProvider,
   getCacheProvider
@@ -38,7 +39,6 @@ const {
 const listSubscriptions = function (req, res, next) {
   handleRequest(async () => {
     const account = await getAccount(req.params)
-    if (!account) throw new Error(`Account not found;404`)
     res.json(account.subscriptions)
   }, { req, res })
 }
@@ -57,7 +57,6 @@ const readSubscription = function (req, res, next) {
 const createSubscription = function (req, res, next) {
   handleRequest(async () => {
     const account = await getAccount(req.params)
-    if (!account) throw new Error(`Account not found;404`)
 
     const { existingSubscription, newSubscription, user, newPlan, oldPlans } = await findCurrentActiveSubscriptionsFromRequest(account, req)
 
@@ -77,7 +76,6 @@ const createSubscription = function (req, res, next) {
 const updateSubscription = function (req, res, next) {
   handleRequest(async () => {
     const account = await getAccount(req.params)
-    if (!account) throw new Error(`Account not found;404`)
     const { subscriptionId } = req.params
     const { plan, billing, token, paymentMethod } = req.body
     const existingSubscription = getSubscription(account, subscriptionId)
@@ -95,7 +93,6 @@ const updateSubscription = function (req, res, next) {
 const deleteSubscription = function (req, res, next) {
   handleRequest(async () => {
     const account = await getAccount(req.params)
-    if (!account) throw new Error(`Account not found;404`)
     // Cancel all subscriptions or with matching ID
     const { subscriptionId } = req.params
     const cancellationPromises = account.subscriptions.map(subscription => cancelSubscription(subscriptionId, subscription))
