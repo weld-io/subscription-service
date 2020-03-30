@@ -17,24 +17,6 @@ const DEFAULT_BILLING = 'month'
 
 // ----- getAccount -----
 
-// getAccountThen = old version
-const getAccountThen = function (req, res, callback) {
-  const Account = require('mongoose').model('Account')
-  const query = { reference: req.params.accountReference || req.params.userReference }
-  if (req.params.accountReference) {
-    // accountReference provided
-    Account.findOne(query).exec(callback)
-  } else if (req.params.userReference) {
-    // userReference provided
-    const User = require('mongoose').model('User')
-    User.findOne(query).exec((err, user) => {
-      (!err && user)
-        ? Account.findById(user.account).exec(callback)
-        : callback(new Error('User not found'))
-    })
-  }
-}
-
 const getAccount = async (params) => {
   const Account = require('mongoose').model('Account')
   const query = { reference: params.accountReference || params.userReference }
@@ -185,7 +167,6 @@ const renewSubscriptionAndAccount = async function ({ account, subscriptions, in
 
 module.exports = {
   DEFAULT_BILLING,
-  getAccountThen,
   getAccount,
   createSubscriptionObject,
   getPlanForSubscription,
