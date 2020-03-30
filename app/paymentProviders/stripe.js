@@ -113,21 +113,31 @@ const updateSubscription = async ({ account, subscription, payment }) => {
   const stripeCustomerId = getStripeCustomerID(account)
   const stripeSubscriptionId = getStripeSubscriptionID(subscription)
 
+  // Update paymentMethod
+  if (payment.paymentMethod) {
+    await stripe.paymentMethods.attach(
+      payment.paymentMethod,
+      { customer: stripeCustomerId }
+    )
+  }
+
   // Call Stripe API
-  if (stripeSubscriptionId) {
-    const stripeSubscriptionObj = scaffoldStripeSubscription({ subscription, payment })
-    const currentStripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId)
-    await stripe.subscriptions.update(stripeSubscriptionId, {
-      cancel_at_period_end: false,
-      items: [{
-        id: currentStripeSubscription.items.data[0].id,
-        plan: stripeSubscriptionObj.items[0].plan
-      }]
-    })
-  } else {
-    const stripeSubscriptionObj = scaffoldStripeSubscription({ stripeCustomerId, subscription, payment })
-    const subscriptionResults = await stripe.subscriptions.create(stripeSubscriptionObj)
-    set(subscription, 'metadata.stripeSubscription', get(subscriptionResults, 'id'))
+  const stripeSubscriptionObj = scaffoldStripeSubscription({ stripeCustomerId, subscription, payment })
+  if (stripeSubscriptionObj.items) {
+    // 'items' exist = update plan & billing
+    if (stripeSubscriptionId) {
+      const currentStripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId)
+      await stripe.subscriptions.update(stripeSubscriptionId, {
+        cancel_at_period_end: false,
+        items: [{
+          id: currentStripeSubscription.items.data[0].id,
+          plan: stripeSubscriptionObj.items[0].plan
+        }]
+      })
+    } else {
+      const subscriptionResults = await stripe.subscriptions.create(stripeSubscriptionObj)
+      set(subscription, 'metadata.stripeSubscription', get(subscriptionResults, 'id'))
+    }
   }
   return { account, subscription }
 }

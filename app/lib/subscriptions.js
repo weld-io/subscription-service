@@ -97,7 +97,7 @@ const findCurrentActiveSubscriptionsFromRequest = async (account, { params, body
   const { newSubscription, user } = createSubscriptionObject(account, { params, body }, useDefaults)
   const newPlan = await getPlanForSubscription(newSubscription)
   const oldPlans = await getPlansForOldSubscriptions(account)
-  const existingSubscription = findCurrentActiveSubscriptions({ account, oldPlans, newPlan })
+  const existingSubscription = toJsonIfNeeded(findCurrentActiveSubscriptions({ account, oldPlans, newPlan }))
   return { existingSubscription, newSubscription, user, newPlan, oldPlans }
 }
 
