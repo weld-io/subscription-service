@@ -7,7 +7,8 @@
 'use strict'
 
 const mongooseCrudify = require('mongoose-crudify')
-const helpers = require('../../config/helpers')
+
+const { sendRequestResponse } = require('../../lib/helpers')
 const Service = require('mongoose').model('Service')
 
 // Private functions
@@ -26,7 +27,7 @@ module.exports = function (app, config) {
       ],
       endResponseInAction: false,
       afterActions: [
-        { middlewares: [helpers.sendRequestResponse] }
+        { middlewares: [sendRequestResponse] }
       ]
     })
   )

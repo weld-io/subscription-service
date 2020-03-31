@@ -31,18 +31,18 @@ Optional:
 
 Then, just start with:
 
-	npm run dev # development
+	yarn dev  # development, you can also use DISABLE_JWT=true yarn dev
 
 or
 
-	npm start # production
+	yarn start # production
 
 Server will default to **http://localhost:3034**
 
 
 ## How to Test
 
-	npm test
+	yarn test
 
 
 ## Entities
@@ -104,6 +104,7 @@ For B2B apps, there can be multiple Users on each Account.
 
 * `DISABLE_JWT`: set to "true" if you don’t want JWT authentication.
 * `JWT_SECRET`: secret key for [JSON Web Token authentication](https://jwt.io).
+* `CACHE_PROVIDER`: defaults to 'fastly'. Add new Cache Providers in folder `/app/cacheProviders`.
 * `PAYMENT_PROVIDER`: defaults to 'stripe'. Add new Payment Providers in folder `/app/paymentProviders`.
 * `STRIPE_SECRET_KEY`: secret key from [Stripe dashboard](https://dashboard.stripe.com/account/apikeys).
 * `VAT_PERCENT`: defaults to "20" (%), as in if the price incl. VAT is $10, VAT is $2.
@@ -137,6 +138,8 @@ Note: `reference` is where you use your main permanent user ID, e.g. from anothe
 	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "userId2", "account": { "name": "My Company 2", "email": "invoices@mycompany2.com" } }'
 
 #### Create new user and account and subscription
+
+Note: currently creates a subscription without payment - don't use.
 
 	curl -X POST http://localhost:3034/api/users -H "Content-Type: application/json" -d '{ "reference": "userId2", "account": { "name": "My Company 2", "email": "invoices@mycompany2.com" }, "subscription": { "plan": "trial", "dateExpires": "2018-04-01" } }'
 
@@ -193,6 +196,10 @@ Returns:
 
 	curl -X GET http://localhost:3034/api/plans
 
+Options:
+
+- `includeVAT`: true or false
+
 #### Get plan info
 
 	curl -X GET http://localhost:3034/api/plans/:reference
@@ -205,10 +212,10 @@ Returns:
 		price: {
 			month: 149,
 			year: 1490,
-			once: 150000
+			once: 150000,
+			vatIncluded: true
 		},
 		vat: {
-			vatIncluded: true,
 			month: 15,
 			year: 149,
 			once: 15000,
@@ -249,24 +256,29 @@ Partial update:
 
 By Account:
 
-	curl -X POST http://localhost:3034/api/accounts/:accountReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package", "billing": "year" }'
+	curl -X POST http://localhost:3034/api/accounts/:accountReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package", "billing": "year", "paymentMethod": "pm_123" }'
 
 or by User:
 
 	curl -X POST http://localhost:3034/api/users/:userReference/subscriptions -H "Content-Type: application/json" -d '{ "plan": "standard-package" }'
 
-Note: `billing` defaults to "month".
+Notes:
+
+- `billing` defaults to "month".
+- Use `?ignorePaymentProvider=true` to not activate Stripe.
 
 
 #### Update subscription
 
-Partial update:
+Change plan, billing cycle, etc.
 
-	curl -X PUT http://localhost:3034/api/accounts/:accountReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
+By Account:
 
-or:
+	curl -X PUT http://localhost:3034/api/accounts/:accountReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "plan": "enterprise" }'
 
-	curl -X PUT http://localhost:3034/api/users/:userReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "reference": "ref1" }'
+or by User:
+
+	curl -X PUT http://localhost:3034/api/users/:userReference/subscriptions/:id -H "Content-Type: application/json" -d '{ "plan": "enterprise" }'
 
 
 #### Renew subscription
@@ -319,10 +331,9 @@ Built on Node.js, Express, MongoDB, [mongoose-crudify](https://github.com/ryo718
 
 Stripe is currently the only payment provider supported, but the idea is that it should be easy to add more payment provider integrations to `/app/paymentProviders` and change the `PAYMENT_PROVIDER` environment variable.
 
-* Stripe plan references are currently derived from Plan reference + billing period, e.g. `basicplan_month`.
+* Stripe plan **ID**’s (“This will identify this plan in the API”) are currently derived from Plan reference + billing period, e.g. `basicplan_month`.
 * Stripe customer ID is saved in Accounts `metadata.stripeCustomer`.
 * Stripe subscription ID is saved in Subscriptions `metadata.stripeSubscription`.
-
 
 ### Stripe example webhook
 

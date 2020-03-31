@@ -8,21 +8,16 @@
 
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
-const helpers = require('../config/helpers')
+
+const { getUniqueSlugFromCollection, stripIdsFromRet } = require('../lib/helpers')
 
 // -----------
 
 // const showOnlyActiveSubscriptions = account => {
-//   account.subscriptions = _.filter(account.subscriptions, helpers.isSubscriptionActive)
+//   account.subscriptions = _.filter(account.subscriptions, isSubscriptionActive)
 // }
 
 // -----------
-
-const Company = new Schema({
-  name: { type: String },
-  vatNumber: { type: String },
-  metadata: {} // for extra data
-})
 
 // Subscription to a Plan
 const Subscription = new Schema({
@@ -40,8 +35,9 @@ const AccountSchema = new Schema({
   reference: { type: String, unique: true, required: true, sparse: true },
   name: { type: String },
   email: { type: String },
-  company: Company,
   countryCode: { type: String },
+  vatNumber: { type: String },
+  vatType: { type: String },
   dateCreated: { type: Date, default: Date.now },
   subscriptions: [Subscription],
   metadata: {} // for Stripe IDs etc
@@ -51,7 +47,7 @@ const AccountSchema = new Schema({
   toJSON: {
     transform: function (doc, ret, options) {
       // showOnlyActiveSubscriptions(ret); // this is handled in User.getSubscriptionPlans now
-      helpers.stripIdsFromRet(doc, ret, options)
+      stripIdsFromRet(doc, ret, options)
     }
   }
 })
@@ -59,7 +55,8 @@ const AccountSchema = new Schema({
 // Set reference/slug
 AccountSchema.pre('validate', function (next) {
   const slugSuggestion = this.reference || this.name || this.email
-  helpers.getUniqueSlugFromCollection('Account', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+  getUniqueSlugFromCollection('Account', undefined, slugSuggestion, { documentId: this._id }, (err, uniqueSlug) => {
+    if (err) return next(err)
     this.reference = uniqueSlug
     next()
   })

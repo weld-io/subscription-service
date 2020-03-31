@@ -12,7 +12,10 @@
 
 const fastly = process.env.FASTLY_API_TOKEN
   ? require('fastly')(process.env.FASTLY_API_TOKEN)
-  : { purgeKey: (zone, key) => console.log(`Dummy purge of ${zone}/${key}`) }
+  : { purgeKey: (zone, key, cb) => {
+    console.log(`Dummy purge of ${zone}/${key}`)
+    cb()
+  } }
 
 module.exports.setKeyOnResponse = (res, accountReference) => {
   res.header('Surrogate-Key', `Account:${accountReference}`)

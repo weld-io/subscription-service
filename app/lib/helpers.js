@@ -1,6 +1,6 @@
 'use strict'
 
-const _ = require('lodash')
+const { findIndex, get, isObjectLike, keys, map, mapValues, mixin, reduce } = require('lodash')
 const async = require('async')
 const mongoose = require('mongoose')
 
@@ -12,7 +12,7 @@ module.exports.specify = function (obj) {
   const getValueDescription = function (val) {
     const objectType = Object.prototype.toString.call(val).replace('[object ', '').replace(']', '')
     switch (objectType) {
-      case 'Object': return '{' + _.keys(val).slice(0, 7).join() + '}'
+      case 'Object': return '{' + keys(val).slice(0, 7).join() + '}'
       case 'String': return val.slice(0, 50)
       case 'Array': return 'Array[' + val.length + ']'
       case 'Function':
@@ -21,7 +21,7 @@ module.exports.specify = function (obj) {
       default: return objectType + (':' + val).slice(0, 50)
     }
   }
-  return _.isObjectLike(obj) ? _.mapValues(obj, val => getValueDescription(val)) : getValueDescription(obj)
+  return isObjectLike(obj) ? mapValues(obj, val => getValueDescription(val)) : getValueDescription(obj)
 }
 
 module.exports.toSlug = function (str, removeInternationalChars) {
@@ -67,27 +67,50 @@ module.exports.getUniqueSlugFromCollection = function (collectionName, keyField 
   let searchQuery = {}
   searchQuery[keyField] = new RegExp('^' + newWordSlug) // begins with
   collection.find(searchQuery).exec((err, docs) => {
-    const existingSlugsArray = _.map(docs, keyField)
+    const existingSlugsArray = map(docs, keyField)
     const { documentId } = options
-    if (documentId) options.newWordsPositionInArray = _.findIndex(docs, doc => doc._id.toString() === documentId.toString())
+    if (documentId) options.newWordsPositionInArray = findIndex(docs, doc => doc._id.toString() === documentId.toString())
     const uniqueSlug = module.exports.getUniqueSlug(existingSlugsArray, newWordSlug, options)
     cb(err, uniqueSlug)
   })
 }
 
-module.exports.toJsonIfNeeded = obj => {
-  obj = obj.toJSON ? obj.toJSON() : obj
-  return obj
-}
+module.exports.toJsonIfNeeded = obj => (obj && obj.toJSON) ? obj.toJSON() : obj
 
 // [{ reference: foo, ... }, { reference: bar, ... }] -> { foo: ..., bar: ... }
-module.exports.arrayToCollection = (array, keyField = 'reference') => _.reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection }, {})
-_.mixin({ 'arrayToCollection': module.exports.arrayToCollection })
+module.exports.arrayToCollection = (array, keyField = 'reference') => reduce(array, (collection, obj) => { collection[obj[keyField]] = obj; return collection }, {})
+mixin({ 'arrayToCollection': module.exports.arrayToCollection })
 
 // applyToAll(func, obj1) or applyToAll(func, [obj1, obj2, ...])
-module.exports.applyToAll = (func, objectOrArray) => objectOrArray.constructor === Array ? _.map(objectOrArray, func) : func(objectOrArray)
-_.mixin({ 'applyToAll': module.exports.applyToAll })
+module.exports.applyToAll = (func, objectOrArray) => objectOrArray.constructor === Array ? map(objectOrArray, func) : func(objectOrArray)
+mixin({ 'applyToAll': module.exports.applyToAll })
 module.exports.applyToAllAsync = (func, objectOrArray, cbWhenDone) => async.eachOfSeries((objectOrArray.constructor === Array ? objectOrArray : [objectOrArray]), func, cbWhenDone)
+
+// ----- REST return -----
+
+// handleRequest is the new way
+
+/** handleRequest(async () => {...}, { req, res }) */
+module.exports.handleRequest = async (actionFunction, { req, res }) => {
+  try {
+    await actionFunction(req, res)
+  } catch (error) {
+    const reference = `E${Math.round(1000 * Math.random())}`
+    const { message, status = 400 } = error
+    console.error(`[${reference}] Error ${status}: “${message}” –`, error)
+    if (!isNaN(status)) res.status(status)
+    res.json({ status, message, reference })
+  }
+}
+
+/** throw new CustomError(`Account not found`, 404) */
+module.exports.CustomError = class CustomError extends Error {
+  constructor (message, status) {
+    super(message)
+    if (Error.captureStackTrace) Error.captureStackTrace(this, CustomError)
+    this.status = status
+  }
+}
 
 const getErrorCode = (err, results) => err
   ? err.statusCode || 400
@@ -102,7 +125,7 @@ module.exports.sendResponse = function (err, results, callback) {
   const errorCode = getErrorCode(err, results)
   // console.log('sendResponse', errorCode, err, results, typeof(callback));
   if (errorCode !== 200) {
-    return this.status(errorCode).send({ code: errorCode, message: _.get(err, 'message'), error: err })
+    return this.status(errorCode).send({ code: errorCode, message: get(err, 'message'), error: err })
   } else {
     if (typeof (callback) === 'function') {
       callback(results)
@@ -133,10 +156,12 @@ module.exports.processAndRespond = async (res, promise) => {
   }
 }
 
+// ----- Authorization -----
+
 module.exports.checkIfAuthorizedUser = function (reqPropertyName = 'params.reference', req, res, next) {
-  const userReference = _.get(req, reqPropertyName)
-  const jwtUserId = _.get(req, 'user.d.uid')
-  const isAdmin = _.get(req, 'user.d.role') === 'admin'
+  const userReference = get(req, reqPropertyName)
+  const jwtUserId = get(req, 'user.d.uid')
+  const isAdmin = get(req, 'user.d.role') === 'admin'
   if (userReference === jwtUserId || isAdmin || process.env.DISABLE_JWT === 'true') {
     next()
   } else {
@@ -158,49 +183,50 @@ module.exports.populateProperties = function ({ modelName, propertyName }, req, 
 // From reference to MongoDB _id (or multiple _id's)
 // E.g. user.account = 'my-company' --> user.account = '594e6f880ca23b37a4090fe0'
 // helpers.changeReferenceToId.bind(this, { modelName:'Service', parentProperty:'services', childIdentifier:'reference' })
-module.exports.changeReferenceToId = function ({ modelName, parentProperty, childIdentifier }, req, res, next) {
+module.exports.changeReferenceToId = function ({ modelName, parentProperty, childIdentifier }, { body }, res, next) {
   // Set up different behavior for different data types
   const propertyTypes = {
     // String: one identifier
     '[object String]': {
       lookupAction: 'find',
-      setSearchQuery: ({ searchQuery, childIdentifier, req }) => { searchQuery[childIdentifier] = req.body[parentProperty]; return searchQuery },
-      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = _.get(results, '0._id'); return req.body }
+      setSearchQuery: ({ searchQuery, childIdentifier, body }) => { searchQuery[childIdentifier] = body[parentProperty]; return searchQuery },
+      setResults: ({ results, parentProperty, body }) => { body[parentProperty] = get(results, '0._id'); return body }
     },
     // Array: array of identifiers
     '[object Array]': {
       lookupAction: 'find',
-      setSearchQuery: ({ searchQuery, childIdentifier, req }) => { searchQuery[childIdentifier] = { $in: req.body[parentProperty] }; return searchQuery },
-      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = _.map(results, '_id'); return req.body }
+      setSearchQuery: ({ searchQuery, childIdentifier, body }) => { searchQuery[childIdentifier] = { $in: body[parentProperty] }; return searchQuery },
+      setResults: ({ results, parentProperty, body }) => { body[parentProperty] = map(results, '_id'); return body }
     },
     // Object: create new child object, e.g. create User and Account in one request
     '[object Object]': {
       lookupAction: 'create',
-      setSearchQuery: ({ searchQuery, childIdentifier, req }) => { Object.assign(searchQuery, req.body[parentProperty]); return searchQuery },
-      setResults: ({ results, parentProperty, req }) => { req.body[parentProperty] = _.get(results, '_id'); return req.body }
+      setSearchQuery: ({ searchQuery, childIdentifier, body }) => { Object.assign(searchQuery, body[parentProperty]); return searchQuery },
+      setResults: ({ results, parentProperty, body }) => { body[parentProperty] = get(results, '_id'); return body }
     }
   }
-  const parentType = Object.prototype.toString.call(req.body[parentProperty])
-  if (propertyTypes[parentType]) {
+  const parentPropertyType = Object.prototype.toString.call(body[parentProperty])
+  if (propertyTypes[parentPropertyType]) {
     // Make query
     let searchQuery = {}
-    propertyTypes[parentType].setSearchQuery({ searchQuery, childIdentifier, req })
+    propertyTypes[parentPropertyType].setSearchQuery({ searchQuery, childIdentifier, body })
     // Do the find or create, depending on lookupAction
     const modelObj = mongoose.model(modelName)
     const cbAfterFindOrCreate = function (err, results) {
       if (!err && results) {
-        propertyTypes[parentType].setResults({ results, parentProperty, req })
+        propertyTypes[parentPropertyType].setResults({ results, parentProperty, body })
       } else if (!err) {
-        res.status(404)
-        err = modelName + '(s) not found: ' + req.body[parentProperty]
+        res && res.status(404)
+        err = modelName + '(s) not found: ' + body[parentProperty]
       }
-      next(err, results)
+      next && next(err, results)
     }
-    propertyTypes[parentType].lookupAction === 'find'
+    propertyTypes[parentPropertyType].lookupAction === 'find'
       ? modelObj.find(searchQuery).lean().exec(cbAfterFindOrCreate)
       : modelObj.create(searchQuery, cbAfterFindOrCreate)
   } else {
-    next(`Property '${parentProperty}' not found or unknown type (${parentType})`)
+    // next && next(new Error(`Property '${parentProperty}' not found or unknown type (${parentPropertyType})`))
+    next && next()
   }
 }
 
