@@ -117,9 +117,22 @@ const isThisTheSubscriptionToCancel = (subscriptionId, subscription) => (subscri
 
 const cancelSubscription = async (subscriptionId, subscription) => {
   if (isThisTheSubscriptionToCancel(subscriptionId, subscription)) {
-    subscription.dateStopped = Date.now()
-    if (get(subscription, 'metadata.stripeSubscription')) await getPaymentProvider().deleteSubscription(subscription)
-    return 1
+    try {
+      if (get(subscription, 'metadata.stripeSubscription')) await getPaymentProvider().deleteSubscription(subscription)
+      subscription.dateStopped = Date.now()
+      return 1
+    } catch (error) {
+      if (error.code === 'resource_missing') {
+        // Subscription in Stripe is missing - still cancel it though
+        console.warn(`Cancelling a missing Stripe subscription: ${error.message || error}`)
+        subscription.dateStopped = Date.now()
+        return 1
+      } else {
+        throw (error)
+      }
+    } finally {
+
+    }
   } else {
     return 0
   }
