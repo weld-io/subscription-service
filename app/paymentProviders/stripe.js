@@ -47,7 +47,7 @@ const scaffoldStripeSubscription = ({ stripeCustomerId, subscription, payment })
     }),
     ...(stripePlanName && {
       // plan: stripePlanName,
-      items: [{ plan: stripePlanName }]
+      items: [{ plan: stripePlanName }] // includes 'billing' in plan name
     }),
     expand: ['latest_invoice.payment_intent'],
     coupon: subscription.discountCode,
@@ -146,7 +146,7 @@ const updateSubscription = async ({ account, subscription, payment }) => {
         cancel_at_period_end: false,
         items: [{
           id: currentStripeSubscription.items.data[0].id,
-          plan: stripeSubscriptionObj.items[0].plan
+          plan: stripeSubscriptionObj.items[0].plan // includes 'billing' in plan name
         }]
       })
     } else {

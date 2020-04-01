@@ -84,9 +84,16 @@ const findCurrentActiveSubscriptionsFromRequest = async (account, { params, body
 }
 
 const updateSubscriptionOnAccount = async function ({ account, subscription, newPlan, dateExpires, isNew }) {
-  subscription.plan = newPlan._id
-  subscription.dateExpires = dateExpires
-  if (isNew) account.subscriptions.push(toJsonIfNeeded(subscription))
+  if (isNew) {
+    subscription.plan = newPlan._id
+    subscription.dateExpires = dateExpires
+    account.subscriptions.push(toJsonIfNeeded(subscription))
+  } else {
+    // Existing
+    subscription = getSubscription(toJsonIfNeeded(account), subscription._id)
+    subscription.plan = newPlan._id
+    subscription.dateExpires = dateExpires
+  }
   await account.save()
   return account.subscriptions
 }
@@ -97,7 +104,7 @@ const updatePaymentProviderSubscription = async function ({ account, subscriptio
   return getPaymentProvider().updateSubscription({ account, subscription, payment }) // taxPercent
 }
 
-const getSubscription = (account, subscriptionId) => account.subscriptions.filter(subscription => subscription._id.toString() === subscriptionId)[0]
+const getSubscription = (account, subscriptionId) => account.subscriptions.filter(subscription => subscription._id.toString() == subscriptionId)[0] // eslint-disable-line eqeqeq
 
 const getSubscriptionIndex = (account, subscriptionId) => findIndex(get(account, 'subscriptions'), subscription => subscription._id.toString() === subscriptionId)
 

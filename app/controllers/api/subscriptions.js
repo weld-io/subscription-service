@@ -57,12 +57,17 @@ const createOrUpdateSubscription = function (req, res, next) {
     // Use ?ignorePaymentProvider=true on URL to avoid Stripe subscriptions being created, e.g. for migration purposes
     const usePaymentProvider = !has(req, 'query.ignorePaymentProvider')
     const payment = { token: req.body.token, paymentMethod: req.body.paymentMethod }
+    // Update in Stripe
     const paymentResults = usePaymentProvider
       ? await getPaymentProvider().createOrUpdateSubscription({ user, account, existingSubscription, newSubscription, payment })
       : {}
     const isNew = usePaymentProvider ? paymentResults.isNew : true
-    const newSubscriptions = await updateSubscriptionOnAccount({ account, subscription: (existingSubscription || newSubscription), newPlan, dateExpires: getDateExpires(req.body), isNew })
-    res.json(newSubscriptions)
+    // Save results on Account
+    const subscription = usePaymentProvider
+      ? paymentResults.subscription
+      : existingSubscription || newSubscription
+    const subscriptions = await updateSubscriptionOnAccount({ account, subscription, newPlan, dateExpires: getDateExpires(req.body), isNew })
+    res.json(subscriptions)
   }, { req, res })
 }
 
