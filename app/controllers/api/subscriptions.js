@@ -137,4 +137,7 @@ module.exports = function (app, config) {
 
   // Receive webhook from e.g. Stripe
   router.post('/api/subscriptions/renew', renewSubscription)
+
+  // Root page for uptime checks
+  router.get('/', (req, res, next) => res.json({ message: 'ok' }))
 }
