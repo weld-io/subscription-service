@@ -26,6 +26,7 @@ const getAccount = async (params) => {
   } else {
     const User = require('mongoose').model('User')
     const user = await User.findOne(query).exec()
+    if (!user) throw new CustomError(`User not found: ${JSON.stringify(params)}`, 404)
     account = await Account.findById(user.account).exec()
   }
   if (!account) throw new CustomError(`Account not found: ${JSON.stringify(params)}`, 404)

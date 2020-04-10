@@ -10,6 +10,8 @@ module.exports = function (app, config) {
       jwt({ secret: process.env.JWT_SECRET })
       // When not to use JWT:
         .unless({ path: [
+          // Root page for uptime checks
+          { url: '/', methods: ['GET'] },
           // Everything with Plans
           { url: /\/api\/plans/i, methods: ['GET'] },
           // Create new User
