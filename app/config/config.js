@@ -20,7 +20,7 @@ const config = {
       name: 'subscription-service'
     },
     port: 3000,
-    db: process.env.MONGODB_URI || 'mongodb://localhost/subscription-service-test'
+    db: process.env.DB_URI || 'mongodb://localhost/subscription-service-test'
 
   },
 
@@ -30,7 +30,7 @@ const config = {
       name: 'subscription-service'
     },
     port: process.env.PORT || 3000,
-    db: process.env.MONGODB_URI || 'mongodb://localhost/subscription-service-production'
+    db: process.env.DB_URI || 'mongodb://localhost/subscription-service-production'
 
   }
 
