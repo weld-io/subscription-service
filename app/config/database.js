@@ -9,7 +9,8 @@ mongoose.connect(config.db, { useNewUrlParser: true, useUnifiedTopology: true, u
 
 module.exports.db = mongoose.connection
 
-module.exports.db.on('error', function () {
+module.exports.db.on('error', function (error) {
+  console.error(`Mongoose error:`, error)
   throw new Error('unable to connect to database at ' + config.db)
 })
 
