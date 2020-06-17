@@ -5,7 +5,7 @@ const config = require('./config')
 
 mongoose.Promise = Promise
 console.log(`Connecting to database: ${config.db}`)
-mongoose.connect(config.db, { useMongoClient: true })
+mongoose.connect(config.db, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
 
 module.exports.db = mongoose.connection
 
