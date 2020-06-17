@@ -10,7 +10,7 @@ const config = {
       name: 'subscription-service'
     },
     port: 3034,
-    db: 'mongodb://localhost/subscription-service-development'
+    db: process.env.DB_URI || 'mongodb://localhost/subscription-service-development'
 
   },
 
