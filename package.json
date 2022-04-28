@@ -32,7 +32,7 @@
     ]
   },
   "dependencies": {
-    "async": "^2.5.0",
+    "async": "^2.6.4",
     "body-parser": "^1.17.1",
     "compression": "^1.6.2",
     "cors": "^2.8.4",
